@@ -5,8 +5,11 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+struct sprite;
+
 struct session {
-  int TODO;
+  struct sprite **spritev;
+  int spritec,spritea;
 };
 
 void session_del(struct session *session);

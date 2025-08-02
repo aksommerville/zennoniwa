@@ -56,3 +56,27 @@ void render_grid(int x,int y,const uint8_t *src,int colc,int rowc) {
   if (vtxc) egg_render(&un,vtxv,vtxc*sizeof(vtxv[0]));
   #undef VTXA
 }
+
+/* Structure tile renderer.
+ */
+ 
+void tilerenderer_add(struct tilerenderer *tr,int x,int y,uint8_t tileid,uint8_t xform) {
+  if (tr->vtxc>=64) tilerenderer_flush(tr);
+  struct egg_render_tile *vtx=tr->vtxv+tr->vtxc++;
+  vtx->x=x;
+  vtx->y=y;
+  vtx->tileid=tileid;
+  vtx->xform=xform;
+}
+
+void tilerenderer_flush(struct tilerenderer *tr) {
+  if (tr->vtxc<1) return;
+  struct egg_render_uniform un={
+    .mode=EGG_RENDER_TILE,
+    .dsttexid=1,
+    .srctexid=g.texid_tilesheet,
+    .alpha=0xff,
+  };
+  egg_render(&un,tr->vtxv,sizeof(struct egg_render_tile)*tr->vtxc);
+  tr->vtxc=0;
+}

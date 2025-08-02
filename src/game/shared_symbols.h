@@ -20,4 +20,10 @@
 #define NS_tilesheet_neighbors 0
 #define NS_tilesheet_weight 0
 
+#define NS_sprtype_dummy 0
+#define NS_sprtype_hero 1
+#define FOR_EACH_SPRTYPE \
+  _(dummy) \
+  _(hero)
+
 #endif
