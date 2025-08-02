@@ -112,7 +112,16 @@ void session_render(struct session *session) {
  */
  
 static int session_apply_map_command(struct session *session,uint8_t opcode,const uint8_t *arg,int argc) {
-  fprintf(stderr,"%s 0x%02x argc=%d\n",__func__,opcode,argc);
+  //fprintf(stderr,"%s 0x%02x argc=%d\n",__func__,opcode,argc);
+  switch (opcode) {
+    case CMD_map_plant: {
+        int x=arg[0],y=arg[1],life=arg[2];
+        if ((x<session->mapw)&&(y<session->maph)) {
+          struct cell *cell=session->cellv+y*session->mapw+x;
+          cell->life=life/255.0;
+        }
+      } break;
+  }
   return 0;
 }
 
@@ -137,13 +146,8 @@ int session_load_map(struct session *session,int rid) {
   struct cell *cell=session->cellv;
   int i=cellc;
   for (;i-->0;cellsrc++,cell++) {
-    if (*cellsrc==0x20) {//TODO use commands for initial life
-      cell->tileid=0x00;
-      cell->life=0.500;
-    } else {
-      cell->tileid=*cellsrc;
-      cell->life=0.0;
-    }
+    cell->tileid=*cellsrc;
+    cell->life=0.0;
   }
   session->mapw=colc;
   session->maph=rowc;

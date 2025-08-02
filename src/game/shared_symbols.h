@@ -11,6 +11,7 @@
 #define NS_sys_maph 8
 
 #define CMD_map_image     0x20 /* u16:imageid */
+#define CMD_map_plant     0x40 /* u16:position u8:level u8:reserved */
 
 #define CMD_sprite_image 0x20 /* u16:imageid */
 #define CMD_sprite_tile  0x21 /* u8:tileid, u8:xform */
