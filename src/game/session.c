@@ -9,6 +9,7 @@ void session_del(struct session *session) {
     while (session->spritec-->0) sprite_del(session->spritev[session->spritec]);
     free(session->spritev);
   }
+  if (session->cellv) free(session->cellv);
   free(session);
 }
 
@@ -22,7 +23,12 @@ struct session *session_new() {
   if (!(session->spritev=malloc(sizeof(void*)*10))) return 0;
   session->spritea=10;
   if (!(session->spritev[session->spritec]=sprite_new(&sprite_type_hero,2.5,1.5,0))) return 0;
-  session->spritec++;
+  session->hero=session->spritev[session->spritec++];
+  
+  if (session_load_map(session,RID_map_trial)<0) {
+    session_del(session);
+    return 0;
+  }
   
   return session;
 }
@@ -31,18 +37,20 @@ struct session *session_new() {
  */
  
 void session_update(struct session *session,double elapsed,int input,int pvinput) {
-  //TODO
   int i;
   
+  // Update sprites.
   for (i=session->spritec;i-->0;) {
     struct sprite *sprite=session->spritev[i];
     if (sprite->defunct) continue;
     if (sprite->type->update) sprite->type->update(sprite,elapsed);
   }
   
+  // Kill defunct sprites.
   for (i=session->spritec;i-->0;) {
     struct sprite *sprite=session->spritev[i];
     if (!sprite->defunct) continue;
+    if (sprite==session->hero) session->hero=0;
     session->spritec--;
     memmove(session->spritev+i,session->spritev+i+1,sizeof(void*)*(session->spritec-i));
     sprite_del(sprite);
@@ -52,23 +60,44 @@ void session_update(struct session *session,double elapsed,int input,int pvinput
 /* Render.
  */
  
-static uint8_t mygrid[NS_sys_mapw*NS_sys_maph]={
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-};
- 
 void session_render(struct session *session) {
   fill_rect(0,0,FBW,FBH,0xff8000ff);
-  int fieldx=(FBW>>1)-((NS_sys_tilesize*NS_sys_mapw)>>1);
-  int fieldy=(FBH>>1)-((NS_sys_tilesize*NS_sys_maph)>>1);
-  render_grid(fieldx,fieldy,mygrid,NS_sys_mapw,NS_sys_maph);
   struct tilerenderer tr={0};
+
+  int fieldx=(FBW>>1)-((NS_sys_tilesize*session->mapw)>>1);
+  int fieldy=(FBH>>1)-((NS_sys_tilesize*session->maph)>>1);
+  if (session->cellv) {
+    int dstx0=fieldx+(NS_sys_tilesize>>1);
+    int dsty=fieldy+(NS_sys_tilesize>>1);
+    const struct cell *cell=session->cellv;
+    int yi=session->maph;
+    int havelife=0;
+    for (;yi-->0;dsty+=NS_sys_tilesize) {
+      int dstx=dstx0;
+      int xi=session->mapw;
+      for (;xi-->0;dstx+=NS_sys_tilesize,cell++) {
+        tilerenderer_add(&tr,dstx,dsty,cell->tileid,0);
+        if (cell->life>0.0) havelife=1;
+      }
+    }
+    if (havelife) {
+      tilerenderer_flush(&tr);
+      struct fancyrenderer fr={0};
+      for (yi=session->maph,dsty=fieldy+(NS_sys_tilesize>>1),cell=session->cellv;yi-->0;dsty+=NS_sys_tilesize) {
+        int dstx=dstx0;
+        int xi=session->mapw;
+        for (;xi-->0;dstx+=NS_sys_tilesize,cell++) {
+          if (cell->life<=0.0) continue;
+          int alpha=(int)(64.0+cell->life*192.0);
+          if (alpha<=0) continue;
+          if (alpha>0xff) alpha=0xff;
+          fancyrenderer_add(&fr,dstx,dsty,0x20,0,0,NS_sys_tilesize,0,alpha);
+        }
+      }
+      fancyrenderer_flush(&fr);
+    }
+  }
+  
   int i=0;
   for (;i<session->spritec;i++) {
     struct sprite *sprite=session->spritev[i];
@@ -77,4 +106,65 @@ void session_render(struct session *session) {
     tilerenderer_add(&tr,dstx,dsty,sprite->tileid,sprite->xform);
   }
   tilerenderer_flush(&tr);
+}
+
+/* Apply command from map.
+ */
+ 
+static int session_apply_map_command(struct session *session,uint8_t opcode,const uint8_t *arg,int argc) {
+  fprintf(stderr,"%s 0x%02x argc=%d\n",__func__,opcode,argc);
+  return 0;
+}
+
+/* Load map.
+ */
+ 
+int session_load_map(struct session *session,int rid) {
+  const uint8_t *serial=0;
+  int serialc=res_get(&serial,EGG_TID_map,rid);
+  if ((serialc<6)||memcmp(serial,"\0EMP",4)) return -1;
+  int colc=serial[4];
+  int rowc=serial[5];
+  int cellc=colc*rowc;
+  int srcp=6;
+  if (!colc||!rowc||(srcp>serialc-cellc)) return -1;
+  if (session->cellv) free(session->cellv);
+  if (!(session->cellv=malloc(sizeof(struct cell)*cellc))) {
+    session->mapw=session->maph=0;
+    return -1;
+  }
+  const uint8_t *cellsrc=serial+srcp;
+  struct cell *cell=session->cellv;
+  int i=cellc;
+  for (;i-->0;cellsrc++,cell++) {
+    if (*cellsrc==0x20) {//TODO use commands for initial life
+      cell->tileid=0x00;
+      cell->life=0.500;
+    } else {
+      cell->tileid=*cellsrc;
+      cell->life=0.0;
+    }
+  }
+  session->mapw=colc;
+  session->maph=rowc;
+  srcp+=cellc;
+  while (srcp<serialc) {
+    uint8_t lead=serial[srcp++];
+    const uint8_t *arg=serial+srcp;
+    int argc=0;
+    switch (lead&0xe0) {
+      case 0x00: break;
+      case 0x20: argc=2; break;
+      case 0x40: argc=4; break;
+      case 0x60: argc=8; break;
+      case 0x80: argc=12; break;
+      case 0xa0: argc=16; break;
+      case 0xc0: argc=20; break;
+      case 0xe0: if (srcp>=serialc) return -1; argc=serial[srcp++]; break;
+    }
+    if (srcp>serialc-argc) return -1;
+    if (session_apply_map_command(session,lead,arg,argc)<0) return -1;
+    srcp+=argc;
+  }
+  return 0;
 }

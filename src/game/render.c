@@ -80,3 +80,45 @@ void tilerenderer_flush(struct tilerenderer *tr) {
   egg_render(&un,tr->vtxv,sizeof(struct egg_render_tile)*tr->vtxc);
   tr->vtxc=0;
 }
+
+/* Structured fancy-tile renderer.
+ */
+ 
+void fancyrenderer_add(struct fancyrenderer *fr,
+  int x,int y,
+  uint8_t tileid,
+  uint8_t xform,
+  uint8_t rotation,
+  uint8_t size,
+  uint32_t tint_rgba,
+  uint32_t prim_rgba
+) {
+  if (fr->vtxc>=64) fancyrenderer_flush(fr);
+  struct egg_render_fancy *vtx=fr->vtxv+fr->vtxc++;
+  vtx->x=x;
+  vtx->y=y;
+  vtx->tileid=tileid;
+  vtx->xform=xform;
+  vtx->rotation=rotation;
+  vtx->size=size;
+  vtx->tr=tint_rgba>>24;
+  vtx->tg=tint_rgba>>16;
+  vtx->tb=tint_rgba>>8;
+  vtx->ta=tint_rgba;
+  vtx->pr=prim_rgba>>24;
+  vtx->pg=prim_rgba>>16;
+  vtx->pb=prim_rgba>>8;
+  vtx->a=prim_rgba;
+}
+
+void fancyrenderer_flush(struct fancyrenderer *fr) {
+  if (fr->vtxc<1) return;
+  struct egg_render_uniform un={
+    .mode=EGG_RENDER_FANCY,
+    .dsttexid=1,
+    .srctexid=g.texid_tilesheet,
+    .alpha=0xff,
+  };
+  egg_render(&un,fr->vtxv,sizeof(struct egg_render_fancy)*fr->vtxc);
+  fr->vtxc=0;
+}
