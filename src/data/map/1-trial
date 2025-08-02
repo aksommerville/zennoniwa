@@ -7,7 +7,7 @@
 00000000000000000000000000000000
 00000000000000000000000000000000
 
-image image:scratch
+image image:tilesheet
 plant @7,6 0xff 0
 plant @2,6 0xff 0
 plant @11,5 0xff 0

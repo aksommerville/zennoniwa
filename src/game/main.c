@@ -19,6 +19,8 @@ int egg_client_init() {
   egg_rom_get(g.rom,g.romc);
   
   if (egg_texture_load_image(g.texid_tilesheet=egg_texture_new(),RID_image_tilesheet)<0) return -1;
+  
+  egg_play_song(RID_song_sand_farming,0,1);
 
   //TODO hello modal
   if (!(g.session=session_new())) return -1;
