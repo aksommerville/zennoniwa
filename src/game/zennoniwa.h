@@ -27,6 +27,7 @@ int res_get(void *dstpp,int tid,int rid);
 /* Render helpers.
  */
 void fill_rect(int x,int y,int w,int h,uint32_t rgba);
+void frame_rect(int x,int y,int w,int h,uint32_t rgba);
 void render_grid(int x,int y,const uint8_t *src,int colc,int rowc);//XXX
 struct tilerenderer { struct egg_render_tile vtxv[64]; int vtxc; };
 void tilerenderer_add(struct tilerenderer *tr,int x,int y,uint8_t tileid,uint8_t xform);

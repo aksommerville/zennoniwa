@@ -20,11 +20,6 @@ struct session *session_new() {
   struct session *session=calloc(1,sizeof(struct session));
   if (!session) return 0;
   
-  if (!(session->spritev=malloc(sizeof(void*)*10))) return 0;
-  session->spritea=10;
-  if (!(session->spritev[session->spritec]=sprite_new(&sprite_type_hero,2.5,1.5,0))) return 0;
-  session->hero=session->spritev[session->spritec++];
-  
   if (session_load_map(session,RID_map_trial)<0) {
     session_del(session);
     return 0;
@@ -95,6 +90,8 @@ void session_render(struct session *session) {
   fill_rect(0,0,FBW,FBH,0xff8000ff);
   struct tilerenderer tr={0};
 
+  /* Map and plants.
+   */
   int fieldx=(FBW>>1)-((NS_sys_tilesize*session->mapw)>>1);
   int fieldy=(FBH>>1)-((NS_sys_tilesize*session->maph)>>1);
   if (session->cellv) {
@@ -128,6 +125,14 @@ void session_render(struct session *session) {
     }
   }
   
+  /* Focus cell indicators.
+   */
+  if (session->hero) {
+    hero_prerender(session->hero,fieldx,fieldy);
+  }
+  
+  /* Sprites.
+   */
   int i=0;
   for (;i<session->spritec;i++) {
     struct sprite *sprite=session->spritev[i];
@@ -148,12 +153,49 @@ void session_render(struct session *session) {
   fill_rect(0,FBH-10,barw,5,0x404060ff);
 }
 
+/* Kill all sprites.
+ * Do not call during an update!
+ */
+ 
+static void session_drop_sprites(struct session *session) {
+  session->hero=0;
+  while (session->spritec>0) {
+    struct sprite *sprite=session->spritev[--(session->spritec)];
+    sprite_del(sprite);
+  }
+}
+
+/* Spawn sprite.
+ */
+ 
+static struct sprite *session_spawn_sprite(struct session *session,const struct sprite_type *type,double x,double y,uint32_t arg) {
+  if (session->spritec>=session->spritea) {
+    int na=session->spritea+32;
+    if (na>INT_MAX/sizeof(void*)) return 0;
+    void *nv=realloc(session->spritev,sizeof(void*)*na);
+    if (!nv) return 0;
+    session->spritev=nv;
+    session->spritea=na;
+  }
+  struct sprite *sprite=sprite_new(type,x,y,arg);
+  if (!sprite) return 0;
+  session->spritev[session->spritec++]=sprite;
+  if (type==&sprite_type_hero) session->hero=sprite;
+  return sprite;
+}
+
 /* Apply command from map.
  */
  
 static int session_apply_map_command(struct session *session,uint8_t opcode,const uint8_t *arg,int argc) {
   //fprintf(stderr,"%s 0x%02x argc=%d\n",__func__,opcode,argc);
   switch (opcode) {
+    case CMD_map_hero: {
+        int x=arg[0],y=arg[1];
+        if ((x<session->mapw)&&(y<session->maph)) {
+          struct sprite *sprite=session_spawn_sprite(session,&sprite_type_hero,x+0.5,y+0.5,0);
+        }
+      } break;
     case CMD_map_plant: {
         int x=arg[0],y=arg[1],life=arg[2];
         if ((x<session->mapw)&&(y<session->maph)) {
@@ -169,6 +211,7 @@ static int session_apply_map_command(struct session *session,uint8_t opcode,cons
  */
  
 int session_load_map(struct session *session,int rid) {
+
   const uint8_t *serial=0;
   int serialc=res_get(&serial,EGG_TID_map,rid);
   if ((serialc<6)||memcmp(serial,"\0EMP",4)) return -1;
@@ -192,6 +235,9 @@ int session_load_map(struct session *session,int rid) {
   session->mapw=colc;
   session->maph=rowc;
   srcp+=cellc;
+  
+  session_drop_sprites(session);
+  
   while (srcp<serialc) {
     uint8_t lead=serial[srcp++];
     const uint8_t *arg=serial+srcp;
@@ -209,6 +255,10 @@ int session_load_map(struct session *session,int rid) {
     if (srcp>serialc-argc) return -1;
     if (session_apply_map_command(session,lead,arg,argc)<0) return -1;
     srcp+=argc;
+  }
+  if (!session->hero) {
+    fprintf(stderr,"map:%d did not spawn a hero\n",rid);
+    return -1;
   }
   return 0;
 }

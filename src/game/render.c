@@ -19,6 +19,17 @@ void fill_rect(int x,int y,int w,int h,uint32_t rgba) {
   egg_render(&un,vtxv,sizeof(vtxv));
 }
 
+/* Frame rect.
+ */
+ 
+void frame_rect(int x,int y,int w,int h,uint32_t rgba) {
+  if ((w<2)||(h<2)) return;
+  fill_rect(x,y,1,h-1,rgba);
+  fill_rect(x,y+h-1,w-1,1,rgba);
+  fill_rect(x+w-1,y+1,1,h-1,rgba);
+  fill_rect(x+1,y,w-1,1,rgba);
+}
+
 /* Grid.
  */
  
