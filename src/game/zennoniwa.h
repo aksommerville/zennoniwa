@@ -1,6 +1,9 @@
 #ifndef EGG_GAME_MAIN_H
 #define EGG_GAME_MAIN_H
 
+struct tilerenderer;
+struct fancyrenderer;
+
 #include "egg/egg.h"
 #include "opt/stdlib/egg-stdlib.h"
 #include "egg_res_toc.h"

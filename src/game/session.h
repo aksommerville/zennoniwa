@@ -18,6 +18,9 @@ struct session {
     double life;
   } *cellv;
   int mapw,maph;
+  
+  int qualified; // Updated each cycle. Nonzero if every cell that wants a plant has one, and none that doesn't.
+  double life; // All plant life, divided by plant-here cell count. Can exceed 1, if disqualified by a false plant.
 };
 
 void session_del(struct session *session);

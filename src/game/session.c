@@ -46,6 +46,37 @@ void session_update(struct session *session,double elapsed,int input,int pvinput
     if (sprite->type->update) sprite->type->update(sprite,elapsed);
   }
   
+  /* Gather score constituents.
+   */
+  double goodlife=0.0,badlife=0.0;
+  int trueplantc=0,wantplantc=0,falseplantc=0,noplantc=0;
+  const struct cell *cell=session->cellv;
+  for (i=session->mapw*session->maph;i-->0;cell++) {
+    if (cell->tileid==1) {//TODO There will be more than just 1 "plant on me" tile.
+      wantplantc++;
+      if (cell->life>0.0) {
+        trueplantc++;
+        goodlife+=cell->life;
+      }
+    } else {
+      noplantc++;
+      if (cell->life>0.0) {
+        falseplantc++;
+        badlife+=cell->life;
+      }
+    }
+  }
+  if ((trueplantc==wantplantc)&&!falseplantc) {
+    session->qualified=1;
+  } else {
+    session->qualified=0;
+  }
+  if (wantplantc>0) {
+    session->life=(goodlife+badlife)/wantplantc;
+  } else {
+    session->life=0.0;
+  }
+  
   // Kill defunct sprites.
   for (i=session->spritec;i-->0;) {
     struct sprite *sprite=session->spritev[i];
@@ -88,10 +119,9 @@ void session_render(struct session *session) {
         int xi=session->mapw;
         for (;xi-->0;dstx+=NS_sys_tilesize,cell++) {
           if (cell->life<=0.0) continue;
-          int alpha=(int)(64.0+cell->life*192.0);
-          if (alpha<=0) continue;
-          if (alpha>0xff) alpha=0xff;
-          fancyrenderer_add(&fr,dstx,dsty,0x20,0,0,NS_sys_tilesize,0,alpha);
+          int frame=cell->life*5.0;
+          if (frame<0) frame=0; else if (frame>4) frame=4;
+          fancyrenderer_add(&fr,dstx,dsty,0x02+frame,0,0,NS_sys_tilesize,0,0xff);
         }
       }
       fancyrenderer_flush(&fr);
@@ -103,9 +133,19 @@ void session_render(struct session *session) {
     struct sprite *sprite=session->spritev[i];
     int dstx=(int)(sprite->x*NS_sys_tilesize)+fieldx;
     int dsty=(int)(sprite->y*NS_sys_tilesize)+fieldy;
-    tilerenderer_add(&tr,dstx,dsty,sprite->tileid,sprite->xform);
+    if (sprite->type->render) {
+      sprite->type->render(sprite,dstx,dsty,&tr);
+    } else {
+      tilerenderer_add(&tr,dstx,dsty,sprite->tileid,sprite->xform);
+    }
   }
   tilerenderer_flush(&tr);
+  
+  /* Quickie indicators for qualified and score.
+   */
+  fill_rect(FBW-20,(FBH>>1)-5,10,10,session->qualified?0x008000ff:0xff0000ff);
+  int barw=session->life*FBW;
+  fill_rect(0,FBH-10,barw,5,0x404060ff);
 }
 
 /* Apply command from map.
