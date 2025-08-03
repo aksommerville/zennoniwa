@@ -39,4 +39,9 @@ FOR_EACH_SPRTYPE
  */
 int physics_rectify(struct sprite *sprite);
 
+/* Session calls between rendering grid+plants and sprites.
+ * (x0,y0) are the origin of the playfield.
+ */
+void hero_prerender(struct sprite *sprite,int x0,int y0);
+
 #endif

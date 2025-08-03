@@ -8,9 +8,10 @@
 00000000000000000000000000000000
 
 image image:tilesheet
-plant @7,6 0xff 0
-plant @2,6 0xff 0
-plant @11,5 0xff 0
-plant @10,2 0xff 0
-plant @6,7 0xff 0
-plant @6,6 0xff 0
+plant @7,6 0x80 0
+plant @2,6 0x80 0
+plant @11,5 0x80 0
+plant @10,2 0x80 0
+plant @6,7 0x80 0
+plant @6,6 0x80 0
+hero @4,2
