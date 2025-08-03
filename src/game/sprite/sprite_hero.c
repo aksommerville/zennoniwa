@@ -3,13 +3,18 @@
 #define CORRUPTION_RATE 0.180 /* hz */
 #define CREATION_RATE   0.800 /* hz */
 
+#define WATERPATTERN_SINGLE 1 /* Just (qx,qy). */
+#define WATERPATTERN_THREE  3 /* Three in a row, perpedicular to the direction of travel. */
+#define WATER_LIMIT 9 /* The most cells addressable by a waterpattern. */
+
 struct sprite_hero {
   struct sprite hdr;
   int indx,indy;
-  int facedx,facedy;
+  int facedx,facedy; // always cardinal
   int stickydx; // facedx but retains its value, in case we only get horizontal faces.
   double pourclock;
   int qx,qy; // Quantized position, updates each cycle.
+  int waterpattern;
 };
 
 #define SPRITE ((struct sprite_hero*)sprite)
@@ -42,7 +47,35 @@ static int _hero_init(struct sprite *sprite) {
   sprite->xform=0;
   SPRITE->facedy=1;
   SPRITE->stickydx=-1;
+  SPRITE->waterpattern=WATERPATTERN_THREE;
   hero_update_qpos(sprite);
+  return 0;
+}
+
+/* Waterpattern definitions.
+ */
+ 
+struct delta2d { int dx,dy; };
+
+static int waterpattern_get(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sprite,int pattern) {
+  switch (pattern) {
+    case WATERPATTERN_SINGLE: {
+        dst[0]=(struct delta2d){0,0};
+        return 1;
+      }
+    case WATERPATTERN_THREE: {
+        if (SPRITE->facedy) {
+          dst[0]=(struct delta2d){-1,0};
+          dst[1]=(struct delta2d){0,0};
+          dst[2]=(struct delta2d){1,0};
+        } else {
+          dst[0]=(struct delta2d){0,-1};
+          dst[1]=(struct delta2d){0,0};
+          dst[2]=(struct delta2d){0,1};
+        }
+        return 3;
+      }
+  }
   return 0;
 }
 
@@ -55,10 +88,20 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
     return;
   }
   SPRITE->pourclock+=elapsed;
-  struct cell *cell=g.session->cellv+SPRITE->qy*g.session->mapw+SPRITE->qx;
-  if (cell->life>=1.0) return;
-  if ((cell->life+=elapsed*CREATION_RATE)>=1.0) {
-    cell->life=1.0;
+  struct delta2d storage[WATER_LIMIT];
+  int patternc=waterpattern_get(storage,sprite,SPRITE->waterpattern);
+  const struct delta2d *delta=storage;
+  for (;patternc-->0;delta++) {
+    int x=SPRITE->qx+delta->dx;
+    int y=SPRITE->qy+delta->dy;
+    if ((x>=0)&&(y>=0)&&(x<g.session->mapw)&&(y<g.session->maph)) {
+      struct cell *cell=g.session->cellv+y*g.session->mapw+x;
+      if (cell->life<1.0) {
+        if ((cell->life+=elapsed*CREATION_RATE)>=1.0) {
+          cell->life=1.0;
+        }
+      }
+    }
   }
 }
 
@@ -113,9 +156,9 @@ static void hero_update_motion(struct sprite *sprite,double elapsed) {
     } else if (SPRITE->facedy&&!nindy&&nindx) {
       SPRITE->facedy=0;
       SPRITE->facedx=nindx;
-    } else if (SPRITE->facedx&&(SPRITE->facedx!=nindx)) {
+    } else if (SPRITE->facedx&&nindx&&(SPRITE->facedx!=nindx)) {
       SPRITE->facedx=nindx;
-    } else if (SPRITE->facedy&&(SPRITE->facedy!=nindy)) {
+    } else if (SPRITE->facedy&&nindy&&(SPRITE->facedy!=nindy)) {
       SPRITE->facedy=nindy;
     }
     SPRITE->indx=nindx;
@@ -154,11 +197,26 @@ static void _hero_update(struct sprite *sprite,double elapsed) {
  */
  
 void hero_prerender(struct sprite *sprite,int x0,int y0) {
-  frame_rect(x0+SPRITE->qx*NS_sys_tilesize,y0+SPRITE->qy*NS_sys_tilesize,NS_sys_tilesize,NS_sys_tilesize,0x4050ff80);
+  
+  /* Corruption zone.
+   */
   int x=SPRITE->qx-1,y=SPRITE->qy-1,w=3,h=3;
   if (x<0) { w+=x; x=0; } else if (x+w>g.session->mapw) w=g.session->mapw-x;
   if (y<0) { h+=y; y=0; } else if (y+h>g.session->maph) h=g.session->maph-y;
   frame_rect(x0+x*NS_sys_tilesize,y0+y*NS_sys_tilesize,w*NS_sys_tilesize,h*NS_sys_tilesize,0xff000080);
+  
+  /* Creation zone.
+   */
+  struct delta2d storage[WATER_LIMIT];
+  int patternc=waterpattern_get(storage,sprite,SPRITE->waterpattern);
+  const struct delta2d *delta=storage;
+  for (;patternc-->0;delta++) {
+    int x=SPRITE->qx+delta->dx;
+    int y=SPRITE->qy+delta->dy;
+    if ((x>=0)&&(y>=0)&&(x<g.session->mapw)&&(y<g.session->maph)) {
+      frame_rect(x0+x*NS_sys_tilesize,y0+y*NS_sys_tilesize,NS_sys_tilesize,NS_sys_tilesize,0x4050ff80);
+    }
+  }
 }
 
 /* Render.

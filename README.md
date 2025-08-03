@@ -8,7 +8,7 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
 
 ## TODO
 
- - [ ] Logical game model.
+ - [x] Logical game model.
  - [ ] Hello modal.
  - [ ] Gameover modal.
  - [ ] Scorekeeping.
