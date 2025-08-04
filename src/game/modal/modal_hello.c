@@ -1,9 +1,10 @@
 #include "game/zennoniwa.h"
 
-#define OPTION_LIMIT 8
+#define OPTION_LIMIT 16
 
 #define OPTION_ID_PLAY 1
 #define OPTION_ID_QUIT 2
+#define OPTION_ID_QUANTIZE_HERO 3 /* XXX TEMP */
 
 struct modal_hello {
   struct modal hdr;
@@ -70,6 +71,7 @@ static int _hello_init(struct modal *modal) {
   egg_texture_get_size(&MODAL->titlew,&MODAL->titleh,MODAL->titleid);
   hello_add_option(modal,"Play",4,0xffffffff,OPTION_ID_PLAY);
   hello_add_option(modal,"Quit",4,0xffffffff,OPTION_ID_QUIT);
+  hello_add_option(modal,g.quantize_hero?"Quantized":"Continuous",-1,0xffffffff,OPTION_ID_QUANTIZE_HERO);
   hello_add_option(modal,"and Alex Hansen",-1,0x402808ff,0);
   hello_add_option(modal,"By AK Sommerville",-1,0x402808ff,0);
   hello_add_option(modal,"GDEX Game Jam",-1,0x402808ff,0);
@@ -113,6 +115,16 @@ static void hello_activate(struct modal *modal) {
       } break;
     case OPTION_ID_QUIT: {
         egg_terminate(0);
+      } break;
+    case OPTION_ID_QUANTIZE_HERO: {
+        g.quantize_hero=g.quantize_hero?0:1;
+        if (g.quantize_hero) {
+          option->src="Quantized";
+        } else {
+          option->src="Continuous";
+        }
+        option->srcc=0;
+        while (option->src[option->srcc]) option->srcc++;
       } break;
   }
 }

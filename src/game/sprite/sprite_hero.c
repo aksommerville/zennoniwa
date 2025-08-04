@@ -2,6 +2,7 @@
 
 #define CORRUPTION_RATE 0.180 /* hz */
 #define CREATION_RATE   0.800 /* hz */
+#define TURN_TIME       0.100
 
 #define WATERPATTERN_SINGLE 1 /* Just (qx,qy). */
 #define WATERPATTERN_THREE  3 /* Three in a row, perpedicular to the direction of travel. */
@@ -15,6 +16,7 @@ struct sprite_hero {
   double pourclock;
   int qx,qy; // Quantized position, updates each cycle.
   int waterpattern;
+  double turnclock;
 };
 
 #define SPRITE ((struct sprite_hero*)sprite)
@@ -128,7 +130,7 @@ static void hero_apply_corruption(struct sprite *sprite,double elapsed) {
 /* Walking.
  */
  
-static void hero_update_motion(struct sprite *sprite,double elapsed) {
+static void hero_update_motion_continuous(struct sprite *sprite,double elapsed) {
   const double speed=6.0;
   
   /* Watch for changes to the input state.
@@ -178,13 +180,123 @@ static void hero_update_motion(struct sprite *sprite,double elapsed) {
   hero_update_qpos(sprite);
 }
 
+/* Motion (quantized-space model).
+ */
+ 
+static void hero_update_motion_quantized(struct sprite *sprite,double elapsed) {
+  const double speed=6.0;
+  
+  /* Watch for changes to the input state.
+   * When the input changes, face that direction.
+   * A change to (ind) or (faced) does not change our actual motion, not yet.
+   */
+  int nindx=0,nindy=0;
+  switch (g.pvinput&(EGG_BTN_LEFT|EGG_BTN_RIGHT)) {
+    case EGG_BTN_LEFT: nindx=-1; break;
+    case EGG_BTN_RIGHT: nindx=1; break;
+  }
+  switch (g.pvinput&(EGG_BTN_UP|EGG_BTN_DOWN)) {
+    case EGG_BTN_UP: nindy=-1; break;
+    case EGG_BTN_DOWN: nindy=1; break;
+  }
+  if ((nindx!=SPRITE->indx)||(nindy!=SPRITE->indy)) {
+    if (nindx&&(nindx!=SPRITE->facedx)) {
+      SPRITE->turnclock=TURN_TIME;
+      SPRITE->facedy=0;
+      SPRITE->facedx=nindx;
+    } else if (nindy&&(nindy!=SPRITE->facedy)) {
+      SPRITE->turnclock=TURN_TIME;
+      SPRITE->facedx=0;
+      SPRITE->facedy=nindy;
+    } else if (SPRITE->facedx&&!nindx&&nindy) {
+      SPRITE->turnclock=TURN_TIME;
+      SPRITE->facedx=0;
+      SPRITE->facedy=nindy;
+    } else if (SPRITE->facedy&&!nindy&&nindx) {
+      SPRITE->turnclock=TURN_TIME;
+      SPRITE->facedy=0;
+      SPRITE->facedx=nindx;
+    } else if (SPRITE->facedx&&nindx&&(SPRITE->facedx!=nindx)) {
+      SPRITE->turnclock=TURN_TIME;
+      SPRITE->facedx=nindx;
+    } else if (SPRITE->facedy&&nindy&&(SPRITE->facedy!=nindy)) {
+      SPRITE->turnclock=TURN_TIME;
+      SPRITE->facedy=nindy;
+    }
+    SPRITE->indx=nindx;
+    SPRITE->indy=nindy;
+    if (SPRITE->facedx) SPRITE->stickydx=SPRITE->facedx;
+  }
+  
+  if ((SPRITE->turnclock-=elapsed)<=0.0) SPRITE->turnclock=0.0;
+  
+  /* Identify and approach the target point.
+   * If we reach it and the associated key is still held, set a new target.
+   * Otherwise, stop there and allow fresh motion.
+   */
+  int xmok=0,ymok=0; // True if we're at the target on the given axis, ie new motion is ok.
+  double targetx=SPRITE->qx+0.5;
+  double targety=SPRITE->qy+0.5;
+  double dx=targetx-sprite->x;
+  double dy=targety-sprite->y;
+  const double close_enough=0.010; // <1/32
+  if (dx>close_enough) {
+    if ((sprite->x+=speed*elapsed)>=targetx) {
+      //TODO if there are impassable cells, we need to check here (and the three other cases)
+      if ((SPRITE->indx==1)&&(SPRITE->qx<g.session->mapw-1)) SPRITE->qx++;
+      else { sprite->x=targetx; xmok=1; }
+    }
+  } else if (dx<-close_enough) {
+    if ((sprite->x-=speed*elapsed)<=targetx) {
+      if ((SPRITE->indx==-1)&&(SPRITE->qx>0)) SPRITE->qx--;
+      else { sprite->x=targetx; xmok=1; }
+    }
+  } else { sprite->x=targetx; xmok=1; }
+  if (dy>close_enough) {
+    if ((sprite->y+=speed*elapsed)>=targety) {
+      if ((SPRITE->indy==1)&&(SPRITE->qy<g.session->maph-1)) SPRITE->qy++;
+      else { sprite->y=targety; ymok=1; }
+    }
+  } else if (dy<-close_enough) {
+    if ((sprite->y-=speed*elapsed)<=targety) {
+      if ((SPRITE->indy==-1)&&(SPRITE->qy>0)) SPRITE->qy--;
+      else { sprite->y=targety; ymok=1; }
+    }
+  } else { sprite->y=targety; ymok=1; }
+  
+  /* If we're stable on both axes, permit new motion according to (indx,indy).
+   * Use (faced) to break ties.
+   * If the turnclock is still running, delay.
+   */
+  if (xmok&&ymok&&(SPRITE->turnclock<=0.0)) {
+    int ndx=0,ndy=0;
+    if (SPRITE->indx&&SPRITE->indy) {
+      if (SPRITE->facedx==SPRITE->indx) ndx=SPRITE->indx;
+      else if (SPRITE->facedy==SPRITE->indy) ndy=SPRITE->indy;
+    } else if (SPRITE->indx) ndx=SPRITE->indx;
+    else if (SPRITE->indy) ndy=SPRITE->indy;
+    if (ndx||ndy) {
+      int dstcol=SPRITE->qx+ndx;
+      int dstrow=SPRITE->qy+ndy;
+      if ((dstcol>=0)&&(dstrow>=0)&&(dstcol<g.session->mapw)&&(dstrow<g.session->maph)) {
+        SPRITE->qx=dstcol;
+        SPRITE->qy=dstrow;
+      }
+    }
+  }
+}
+
 /* Update.
  */
 
 static void _hero_update(struct sprite *sprite,double elapsed) {
 
   // Walking etc.
-  hero_update_motion(sprite,elapsed);
+  if (g.quantize_hero) {
+    hero_update_motion_quantized(sprite,elapsed);
+  } else {
+    hero_update_motion_continuous(sprite,elapsed);
+  }
   
   // Water plants if holding SOUTH.
   hero_water_plants(sprite,elapsed,g.pvinput&EGG_BTN_SOUTH);

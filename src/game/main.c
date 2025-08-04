@@ -21,8 +21,7 @@ int egg_client_init() {
   if (egg_texture_load_image(g.texid_tilesheet=egg_texture_new(),RID_image_tilesheet)<0) return -1;
   if (egg_texture_load_image(g.texid_font=egg_texture_new(),RID_image_fonttiles)<0) return -1;
   
-  //egg_play_song(RID_song_sand_farming,0,1);
-  //egg_play_song(RID_song_corruption_stands_alone,0,1);
+  g.quantize_hero=1;
 
   if (!(g.modal=modal_new(&modal_type_hello))) return -1;
   //if (!(g.session=session_new())) return -1;
@@ -35,7 +34,11 @@ void egg_client_update(double elapsed) {
   int input=egg_input_get_one(0);
   int pvinput=g.pvinput;
   if (input!=g.pvinput) {
-    if (g.modal&&g.modal->type->input) g.modal->type->input(g.modal,input,pvinput);
+    if ((input&EGG_BTN_AUX1)&&!(pvinput&EGG_BTN_AUX1)&&!g.modal) {
+      g.modal=modal_new(&modal_type_hello);
+    } else {
+      if (g.modal&&g.modal->type->input) g.modal->type->input(g.modal,input,pvinput);
+    }
     g.pvinput=input;
   }
   
