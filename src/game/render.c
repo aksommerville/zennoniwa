@@ -30,6 +30,25 @@ void frame_rect(int x,int y,int w,int h,uint32_t rgba) {
   fill_rect(x+1,y,w-1,1,rgba);
 }
 
+/* Simple decal.
+ */
+ 
+void blit_texture(int dstx,int dsty,int texid,int w,int h,uint8_t alpha) {
+  struct egg_render_uniform un={
+    .mode=EGG_RENDER_TRIANGLE_STRIP,
+    .dsttexid=1,
+    .srctexid=texid,
+    .alpha=alpha,
+  };
+  struct egg_render_raw vtxv[]={
+    {dstx,dsty,0,0},
+    {dstx,dsty+h,0,h},
+    {dstx+w,dsty,w,0},
+    {dstx+w,dsty+h,w,h},
+  };
+  egg_render(&un,vtxv,sizeof(vtxv));
+}
+
 /* Grid.
  */
  
@@ -68,6 +87,19 @@ void render_grid(int x,int y,const uint8_t *src,int colc,int rowc) {
   #undef VTXA
 }
 
+/* Text with our tile font.
+ */
+ 
+void render_text(int x,int y,const char *src,int srcc,uint32_t rgba) {
+  if (!src) return;
+  if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
+  struct tilerenderer tr={.tint=rgba,.texid=g.texid_font};
+  for (;srcc-->0;src++,x+=16) {
+    tilerenderer_add(&tr,x,y,*src,0);
+  }
+  tilerenderer_flush(&tr);
+}
+
 /* Structure tile renderer.
  */
  
@@ -86,8 +118,10 @@ void tilerenderer_flush(struct tilerenderer *tr) {
     .mode=EGG_RENDER_TILE,
     .dsttexid=1,
     .srctexid=g.texid_tilesheet,
+    .tint=tr->tint,
     .alpha=0xff,
   };
+  if (tr->texid) un.srctexid=tr->texid;
   egg_render(&un,tr->vtxv,sizeof(struct egg_render_tile)*tr->vtxc);
   tr->vtxc=0;
 }

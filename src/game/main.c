@@ -19,11 +19,13 @@ int egg_client_init() {
   egg_rom_get(g.rom,g.romc);
   
   if (egg_texture_load_image(g.texid_tilesheet=egg_texture_new(),RID_image_tilesheet)<0) return -1;
+  if (egg_texture_load_image(g.texid_font=egg_texture_new(),RID_image_fonttiles)<0) return -1;
   
-  egg_play_song(RID_song_sand_farming,0,1);
+  //egg_play_song(RID_song_sand_farming,0,1);
+  //egg_play_song(RID_song_corruption_stands_alone,0,1);
 
-  //TODO hello modal
-  if (!(g.session=session_new())) return -1;
+  if (!(g.modal=modal_new(&modal_type_hello))) return -1;
+  //if (!(g.session=session_new())) return -1;
 
   return 0;
 }
@@ -33,13 +35,27 @@ void egg_client_update(double elapsed) {
   int input=egg_input_get_one(0);
   int pvinput=g.pvinput;
   if (input!=g.pvinput) {
+    if (g.modal&&g.modal->type->input) g.modal->type->input(g.modal,input,pvinput);
     g.pvinput=input;
   }
   
-  //TODO modals
-  if (g.session) session_update(g.session,elapsed,input,pvinput);
+  if (g.modal) {
+    g.modal->type->update(g.modal,elapsed);
+    if (g.modal->defunct) {
+      modal_del(g.modal);
+      g.modal=0;
+      g.pvinput=pvinput=input; // We'll be updating the session. Ignore any input from this frame.
+    }
+  }
+  if (g.session&&!g.modal) { // <-- important: If we just removed the modal this cycle, DO update the session.
+    session_update(g.session,elapsed,input,pvinput);
+  }
 }
 
 void egg_client_render() {
-  if (g.session) session_render(g.session);
+  if (g.modal) {
+    if (g.modal->type->render) g.modal->type->render(g.modal);
+  } else if (g.session) {
+    session_render(g.session);
+  }
 }

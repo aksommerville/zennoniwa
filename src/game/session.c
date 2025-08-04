@@ -211,6 +211,7 @@ static int session_apply_map_command(struct session *session,uint8_t opcode,cons
  */
  
 int session_load_map(struct session *session,int rid) {
+  egg_play_song(RID_song_sand_farming,0,1);
 
   const uint8_t *serial=0;
   int serialc=res_get(&serial,EGG_TID_map,rid);
