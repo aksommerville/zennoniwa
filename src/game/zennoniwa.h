@@ -23,6 +23,7 @@ extern struct g {
   int texid_font;
   struct session *session;
   struct modal *modal;
+  int quantize_hero; // Dev only. TODO Once we choose which way we like, remove the other.
 } g;
 
 int res_get(void *dstpp,int tid,int rid);
