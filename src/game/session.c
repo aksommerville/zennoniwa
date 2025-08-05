@@ -25,6 +25,8 @@ struct session *session_new() {
     return 0;
   }
   
+  session->input_blackout=1;
+  
   return session;
 }
 
@@ -33,6 +35,18 @@ struct session *session_new() {
  
 void session_update(struct session *session,double elapsed,int input,int pvinput) {
   int i;
+  
+  // Update input blackout.
+  if (session->input_blackout) {
+    if (input&EGG_BTN_SOUTH) {
+      input&=~EGG_BTN_SOUTH;
+      pvinput&=~EGG_BTN_SOUTH;
+    } else {
+      session->input_blackout=0;
+    }
+  }
+  session->input=input;
+  session->pvinput=pvinput;
   
   // Update sprites.
   for (i=session->spritec;i-->0;) {

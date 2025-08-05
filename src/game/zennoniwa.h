@@ -24,6 +24,7 @@ extern struct g {
   struct session *session;
   struct modal *modal;
   int quantize_hero; // Dev only. TODO Once we choose which way we like, remove the other.
+  int corrupt_always; // Dev only. ''
 } g;
 
 int res_get(void *dstpp,int tid,int rid);

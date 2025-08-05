@@ -5,6 +5,7 @@
 #define OPTION_ID_PLAY 1
 #define OPTION_ID_QUIT 2
 #define OPTION_ID_QUANTIZE_HERO 3 /* XXX TEMP */
+#define OPTION_ID_CORRUPT_ALWAYS 4 /* XXX TEMP */
 
 struct modal_hello {
   struct modal hdr;
@@ -72,6 +73,7 @@ static int _hello_init(struct modal *modal) {
   hello_add_option(modal,"Play",4,0xffffffff,OPTION_ID_PLAY);
   hello_add_option(modal,"Quit",4,0xffffffff,OPTION_ID_QUIT);
   hello_add_option(modal,g.quantize_hero?"Quantized":"Continuous",-1,0xffffffff,OPTION_ID_QUANTIZE_HERO);
+  hello_add_option(modal,g.corrupt_always?"Corrupt Always":"Corrupt On Demand",-1,0xffffffff,OPTION_ID_CORRUPT_ALWAYS);
   hello_add_option(modal,"and Alex Hansen",-1,0x402808ff,0);
   hello_add_option(modal,"By AK Sommerville",-1,0x402808ff,0);
   hello_add_option(modal,"GDEX Game Jam",-1,0x402808ff,0);
@@ -122,6 +124,16 @@ static void hello_activate(struct modal *modal) {
           option->src="Quantized";
         } else {
           option->src="Continuous";
+        }
+        option->srcc=0;
+        while (option->src[option->srcc]) option->srcc++;
+      } break;
+    case OPTION_ID_CORRUPT_ALWAYS: {
+        g.corrupt_always=g.corrupt_always?0:1;
+        if (g.corrupt_always) {
+          option->src="Corrupt Always";
+        } else {
+          option->src="Corrupt On Demand";
         }
         option->srcc=0;
         while (option->src[option->srcc]) option->srcc++;

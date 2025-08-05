@@ -57,9 +57,12 @@ static int _hero_init(struct sprite *sprite) {
 /* Waterpattern definitions.
  */
  
-struct delta2d { int dx,dy; };
+struct delta2d {
+  int dx,dy;
+  double rate; // >0 to create, <0 to corrupt, or 0 to make the caller wonder why you bothered returning it
+};
 
-static int waterpattern_get(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sprite,int pattern) {
+static int waterpattern_get_always(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sprite,int pattern) {
   switch (pattern) {
     case WATERPATTERN_SINGLE: {
         dst[0]=(struct delta2d){0,0};
@@ -81,7 +84,34 @@ static int waterpattern_get(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sp
   return 0;
 }
 
+static int waterpattern_get_ondemand(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sprite,int pattern) {
+  struct delta2d *delta=dst;
+  int i=0; for (;i<9;i++) {
+    dst[i].dx=(i%3)-1;
+    dst[i].dy=(i/3)-1;
+    dst[i].rate=-CORRUPTION_RATE;
+  }
+  switch (pattern) {
+    case WATERPATTERN_SINGLE: {
+        dst[0].rate=CREATION_RATE;
+      } break;
+    case WATERPATTERN_THREE: {
+        if (SPRITE->facedy) {
+          dst[3].rate=CREATION_RATE;
+          dst[4].rate=CREATION_RATE;
+          dst[5].rate=CREATION_RATE;
+        } else {
+          dst[1].rate=CREATION_RATE;
+          dst[4].rate=CREATION_RATE;
+          dst[7].rate=CREATION_RATE;
+        }
+      } break;
+  }
+  return 9;
+}
+
 /* Water plants.
+ * When (!g.corrupt_always), this effects both creation and corruption.
  */
  
 static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
@@ -91,23 +121,27 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
   }
   SPRITE->pourclock+=elapsed;
   struct delta2d storage[WATER_LIMIT];
-  int patternc=waterpattern_get(storage,sprite,SPRITE->waterpattern);
+  int patternc=g.corrupt_always
+    ?waterpattern_get_always(storage,sprite,SPRITE->waterpattern)
+    :waterpattern_get_ondemand(storage,sprite,SPRITE->waterpattern);
   const struct delta2d *delta=storage;
   for (;patternc-->0;delta++) {
     int x=SPRITE->qx+delta->dx;
     int y=SPRITE->qy+delta->dy;
     if ((x>=0)&&(y>=0)&&(x<g.session->mapw)&&(y<g.session->maph)) {
       struct cell *cell=g.session->cellv+y*g.session->mapw+x;
-      if (cell->life<1.0) {
-        if ((cell->life+=elapsed*CREATION_RATE)>=1.0) {
-          cell->life=1.0;
-        }
+      cell->life+=elapsed*delta->rate;
+      if (cell->life>1.0) {
+        cell->life=1.0;
+      } else if (cell->life<0.0) {
+        cell->life=0.0;
       }
     }
   }
 }
 
 /* Corrupt plants.
+ * This should only be called when (g.corrupt_always).
  */
  
 static void hero_apply_corruption_1(struct sprite *sprite,int x,int y,double elapsed) {
@@ -137,11 +171,11 @@ static void hero_update_motion_continuous(struct sprite *sprite,double elapsed) 
    * When the input changes, face that direction.
    */
   int nindx=0,nindy=0;
-  switch (g.pvinput&(EGG_BTN_LEFT|EGG_BTN_RIGHT)) {
+  switch (g.session->input&(EGG_BTN_LEFT|EGG_BTN_RIGHT)) {
     case EGG_BTN_LEFT: nindx=-1; break;
     case EGG_BTN_RIGHT: nindx=1; break;
   }
-  switch (g.pvinput&(EGG_BTN_UP|EGG_BTN_DOWN)) {
+  switch (g.session->input&(EGG_BTN_UP|EGG_BTN_DOWN)) {
     case EGG_BTN_UP: nindy=-1; break;
     case EGG_BTN_DOWN: nindy=1; break;
   }
@@ -191,11 +225,11 @@ static void hero_update_motion_quantized(struct sprite *sprite,double elapsed) {
    * A change to (ind) or (faced) does not change our actual motion, not yet.
    */
   int nindx=0,nindy=0;
-  switch (g.pvinput&(EGG_BTN_LEFT|EGG_BTN_RIGHT)) {
+  switch (g.session->input&(EGG_BTN_LEFT|EGG_BTN_RIGHT)) {
     case EGG_BTN_LEFT: nindx=-1; break;
     case EGG_BTN_RIGHT: nindx=1; break;
   }
-  switch (g.pvinput&(EGG_BTN_UP|EGG_BTN_DOWN)) {
+  switch (g.session->input&(EGG_BTN_UP|EGG_BTN_DOWN)) {
     case EGG_BTN_UP: nindy=-1; break;
     case EGG_BTN_DOWN: nindy=1; break;
   }
@@ -298,18 +332,20 @@ static void _hero_update(struct sprite *sprite,double elapsed) {
     hero_update_motion_continuous(sprite,elapsed);
   }
   
-  // Water plants if holding SOUTH.
-  hero_water_plants(sprite,elapsed,g.pvinput&EGG_BTN_SOUTH);
-  
-  // Corrupt nearby plants.
-  hero_apply_corruption(sprite,elapsed);
+  // Creation and corruption.
+  if (g.corrupt_always) {
+    hero_water_plants(sprite,elapsed,g.session->input&EGG_BTN_SOUTH);
+    hero_apply_corruption(sprite,elapsed);
+  } else {
+    hero_water_plants(sprite,elapsed,g.session->input&EGG_BTN_SOUTH);
+  }
 }
 
 /* Render tile focus, after map but before sprites.
  */
  
 void hero_prerender(struct sprite *sprite,int x0,int y0) {
-  
+  #if 0 /* Old approach (g.corrupt_always!=0), with a fixed corruption zone and variable creation zone. */
   /* Corruption zone.
    */
   int x=SPRITE->qx-1,y=SPRITE->qy-1,w=3,h=3;
@@ -327,6 +363,23 @@ void hero_prerender(struct sprite *sprite,int x0,int y0) {
     int y=SPRITE->qy+delta->dy;
     if ((x>=0)&&(y>=0)&&(x<g.session->mapw)&&(y<g.session->maph)) {
       frame_rect(x0+x*NS_sys_tilesize,y0+y*NS_sys_tilesize,NS_sys_tilesize,NS_sys_tilesize,0x4050ff80);
+    }
+  }
+  #endif
+  
+  /* New approach, we can ask for the on-demand mutation zones no matter which way we're operating. */
+  struct delta2d storage[WATER_LIMIT];
+  int patternc=waterpattern_get_ondemand(storage,sprite,SPRITE->waterpattern);
+  const struct delta2d *delta=storage;
+  for (;patternc-->0;delta++) {
+    int x=SPRITE->qx+delta->dx;
+    int y=SPRITE->qy+delta->dy;
+    if ((x>=0)&&(y>=0)&&(x<g.session->mapw)&&(y<g.session->maph)) {
+      if (delta->rate>0.0) {
+        frame_rect(x0+x*NS_sys_tilesize,y0+y*NS_sys_tilesize,NS_sys_tilesize,NS_sys_tilesize,0x4050ff80);
+      } else if (delta->rate<0.0) {
+        frame_rect(x0+x*NS_sys_tilesize,y0+y*NS_sys_tilesize,NS_sys_tilesize,NS_sys_tilesize,0xff000080);
+      }
     }
   }
 }
