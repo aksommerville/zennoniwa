@@ -1,11 +1,11 @@
 #include "game/zennoniwa.h"
 
-#define CORRUPTION_RATE 0.180 /* hz */
-#define CREATION_RATE   0.800 /* hz */
-#define TURN_TIME       0.100
+#define CORRUPTION_RATE -0.400 /* hz */
+#define CREATION_RATE    0.800 /* hz */
+#define TURN_TIME        0.100
 
 #define WATERPATTERN_SINGLE 1 /* Just (qx,qy). */
-#define WATERPATTERN_THREE  3 /* Three in a row, perpedicular to the direction of travel. */
+#define WATERPATTERN_THREE  3 /* Three in a row, perpendicular to the direction of travel. */
 #define WATER_LIMIT 9 /* The most cells addressable by a waterpattern. */
 
 struct sprite_hero {
@@ -89,7 +89,7 @@ static int waterpattern_get_ondemand(struct delta2d *dst/*WATER_LIMIT*/,struct s
   int i=0; for (;i<9;i++) {
     dst[i].dx=(i%3)-1;
     dst[i].dy=(i/3)-1;
-    dst[i].rate=-CORRUPTION_RATE;
+    dst[i].rate=CORRUPTION_RATE;
   }
   switch (pattern) {
     case WATERPATTERN_SINGLE: {
@@ -148,7 +148,7 @@ static void hero_apply_corruption_1(struct sprite *sprite,int x,int y,double ela
   if ((x<0)||(y<0)||(x>=g.session->mapw)||(y>=g.session->maph)) return;
   struct cell *cell=g.session->cellv+y*g.session->mapw+x;
   if (cell->life<=0.0) return;
-  if ((cell->life-=elapsed*CORRUPTION_RATE)<=0.0) {
+  if ((cell->life+=elapsed*CORRUPTION_RATE)<=0.0) {
     cell->life=0.0;
   }
 }

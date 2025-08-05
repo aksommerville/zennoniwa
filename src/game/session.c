@@ -30,6 +30,13 @@ struct session *session_new() {
   return session;
 }
 
+/* Win, enter denouement.
+ */
+ 
+static void session_win(struct session *session) {
+  if (!g.modal) g.modal=modal_new(&modal_type_denouement);
+}
+
 /* Update.
  */
  
@@ -85,6 +92,13 @@ void session_update(struct session *session,double elapsed,int input,int pvinput
   } else {
     session->life=0.0;
   }
+  if (session->qualified) {
+    if ((session->termclock+=elapsed)>=SESSION_TERMCLOCK_LIMIT) {
+      session_win(session);
+    }
+  } else {
+    session->termclock=0.0;
+  }
   
   // Kill defunct sprites.
   for (i=session->spritec;i-->0;) {
@@ -101,7 +115,10 @@ void session_update(struct session *session,double elapsed,int input,int pvinput
  */
  
 void session_render(struct session *session) {
-  fill_rect(0,0,FBW,FBH,0xff8000ff);
+
+  /* Background.
+   */
+  fill_rect(0,0,FBW,FBH,0x804000ff);
   struct tilerenderer tr={0};
 
   /* Map and plants.
@@ -142,6 +159,7 @@ void session_render(struct session *session) {
   /* Focus cell indicators.
    */
   if (session->hero) {
+    tilerenderer_flush(&tr);
     hero_prerender(session->hero,fieldx,fieldy);
   }
   
@@ -160,11 +178,21 @@ void session_render(struct session *session) {
   }
   tilerenderer_flush(&tr);
   
-  /* Quickie indicators for qualified and score.
+  /* Quickie indicators for qualified and score. XXX
    */
   fill_rect(FBW-20,(FBH>>1)-5,10,10,session->qualified?0x008000ff:0xff0000ff);
   int barw=session->life*FBW;
   fill_rect(0,FBH-10,barw,5,0x404060ff);
+  
+  /* Fade out if terminating.
+   */
+  if (session->termclock>SESSION_TERMCLOCK_BEGIN) {
+    int alpha=(int)(((session->termclock-SESSION_TERMCLOCK_BEGIN)*255.0)/(SESSION_TERMCLOCK_LIMIT-SESSION_TERMCLOCK_BEGIN));
+    if (alpha>0) {
+      if (alpha>0xff) alpha=0xff;
+      fill_rect(0,0,FBW,FBH,0x1020c000|alpha);
+    }
+  }
 }
 
 /* Kill all sprites.
@@ -225,11 +253,16 @@ static int session_apply_map_command(struct session *session,uint8_t opcode,cons
  */
  
 int session_load_map(struct session *session,int rid) {
+  session->rid=rid;
+  session->input_blackout=1;
   egg_play_song(RID_song_sand_farming,0,1);
 
   const uint8_t *serial=0;
   int serialc=res_get(&serial,EGG_TID_map,rid);
-  if ((serialc<6)||memcmp(serial,"\0EMP",4)) return -1;
+  if ((serialc<6)||memcmp(serial,"\0EMP",4)) {
+    session->load_failed=1;
+    return -1;
+  }
   int colc=serial[4];
   int rowc=serial[5];
   int cellc=colc*rowc;
@@ -276,4 +309,11 @@ int session_load_map(struct session *session,int rid) {
     return -1;
   }
   return 0;
+}
+
+/* Load next map.
+ */
+ 
+int session_load_next(struct session *session) {
+  return session_load_map(session,session->rid+1);
 }

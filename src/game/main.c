@@ -46,13 +46,23 @@ void egg_client_update(double elapsed) {
   if (g.modal) {
     g.modal->type->update(g.modal,elapsed);
     if (g.modal->defunct) {
+      const struct modal_type *type=g.modal->type;
       modal_del(g.modal);
       g.modal=0;
       g.pvinput=pvinput=input; // We'll be updating the session. Ignore any input from this frame.
+      if (type==&modal_type_gameover) { // If we just dropped the gameover modal, create a new hello.
+        g.modal=modal_new(&modal_type_hello);
+      }
     }
   }
   if (g.session&&!g.modal) { // <-- important: If we just removed the modal this cycle, DO update the session.
-    session_update(g.session,elapsed,input,pvinput);
+    if (g.session->load_failed) {
+      g.modal=modal_new(&modal_type_gameover);
+      session_del(g.session);
+      g.session=0;
+    } else {
+      session_update(g.session,elapsed,input,pvinput);
+    }
   }
 }
 
