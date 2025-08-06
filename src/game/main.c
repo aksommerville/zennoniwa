@@ -20,6 +20,7 @@ int egg_client_init() {
   
   if (egg_texture_load_image(g.texid_tilesheet=egg_texture_new(),RID_image_tilesheet)<0) return -1;
   if (egg_texture_load_image(g.texid_font=egg_texture_new(),RID_image_fonttiles)<0) return -1;
+  if (egg_texture_load_image(g.texid_halftiles=egg_texture_new(),RID_image_halftiles)<0) return -1;
   
   g.quantize_hero=1;
   g.corrupt_always=0;

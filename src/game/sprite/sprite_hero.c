@@ -5,8 +5,11 @@
 #define TURN_TIME        0.100
 
 #define WATERPATTERN_SINGLE 1 /* Just (qx,qy). */
+#define WATERPATTERN_CROSS 2
 #define WATERPATTERN_THREE  3 /* Three in a row, perpendicular to the direction of travel. */
 #define WATER_LIMIT 9 /* The most cells addressable by a waterpattern. */
+
+static void hero_rebuild_watertiles(struct sprite *sprite);
 
 struct sprite_hero {
   struct sprite hdr;
@@ -17,6 +20,11 @@ struct sprite_hero {
   int qx,qy; // Quantized position, updates each cycle.
   int waterpattern;
   double turnclock;
+  double highlightclock;
+  int highlightframe;
+  struct egg_render_tile watertilev[6*6]; // Four tiles per map tile.
+  int watertilec;
+  int waterx0,watery0; // Playfield origin for (watertilev). Need to defer until after the first update.
 };
 
 #define SPRITE ((struct sprite_hero*)sprite)
@@ -51,6 +59,8 @@ static int _hero_init(struct sprite *sprite) {
   SPRITE->stickydx=-1;
   SPRITE->waterpattern=WATERPATTERN_THREE;
   hero_update_qpos(sprite);
+  SPRITE->waterx0=-1; // Signal to rebuild watertiles at the first prerender.
+  //hero_rebuild_watertiles(sprite);
   return 0;
 }
 
@@ -67,6 +77,14 @@ static int waterpattern_get_always(struct delta2d *dst/*WATER_LIMIT*/,struct spr
     case WATERPATTERN_SINGLE: {
         dst[0]=(struct delta2d){0,0};
         return 1;
+      }
+    case WATERPATTERN_CROSS: {
+        dst[0]=(struct delta2d){0,-1};
+        dst[1]=(struct delta2d){-1,0};
+        dst[2]=(struct delta2d){0,0};
+        dst[3]=(struct delta2d){1,0};
+        dst[4]=(struct delta2d){0,1};
+        return 5;
       }
     case WATERPATTERN_THREE: {
         if (SPRITE->facedy) {
@@ -95,6 +113,13 @@ static int waterpattern_get_ondemand(struct delta2d *dst/*WATER_LIMIT*/,struct s
     case WATERPATTERN_SINGLE: {
         dst[0].rate=CREATION_RATE;
       } break;
+    case WATERPATTERN_CROSS: {
+        dst[1].rate=CREATION_RATE;
+        dst[3].rate=CREATION_RATE;
+        dst[4].rate=CREATION_RATE;
+        dst[5].rate=CREATION_RATE;
+        dst[7].rate=CREATION_RATE;
+      } break;
     case WATERPATTERN_THREE: {
         if (SPRITE->facedy) {
           dst[3].rate=CREATION_RATE;
@@ -108,6 +133,93 @@ static int waterpattern_get_ondemand(struct delta2d *dst/*WATER_LIMIT*/,struct s
       } break;
   }
   return 9;
+}
+
+/* Rebuild vertex list for the waterpattern highlight.
+ * Animation is not relevant, that gets rewritten at each render.
+ */
+ 
+static void hero_rebuild_watertiles(struct sprite *sprite) {
+  SPRITE->watertilec=0;
+
+  /* Get the generic pattern.
+   */
+  struct delta2d storage[WATER_LIMIT];
+  int patternc=waterpattern_get_ondemand(storage,sprite,SPRITE->waterpattern);
+  
+  /* Turn that delta list into a flat 6x6 grid of moods.
+   * (0,1,2)=(none,positive,negative), setting 4 at a time.
+   */
+  uint8_t moodv[6*6]={0};
+  const struct delta2d *delta=storage;
+  for (;patternc-->0;delta++) {
+    uint8_t mood=(delta->rate>0.0)?1:(delta->rate<0.0)?2:0;
+    if (!mood) continue;
+    uint8_t *dst=moodv+(delta->dy+1)*12+(delta->dx+1)*2;
+    dst[0]=dst[1]=dst[6]=dst[7]=mood;
+  }
+  
+  /* Neighbor-join those moods into a preliminary 6x6 tileid grid.
+   * 0x10=edge(N), 0x11=corner(NE), 0x21=concave(NE), 0x20=negative.
+   * Don't animate.
+   * Use the high 2 bits to indicate rotation counter-clockwise.
+   */
+  uint8_t tileidv[6*6]={0};
+  uint8_t *dstp=tileidv;
+  const uint8_t *srcp=moodv;
+  int y=0; for (;y<6;y++) {
+    int x=0; for (;x<6;x++,dstp++,srcp++) {
+      if (!*srcp) continue; // mood zero is always tile zero, ie vacant
+      if (*srcp==2) { // mood two is always tile 0x20, ie negative.
+        *dstp=0x20;
+        continue;
+      }
+      uint8_t neighbors=0;
+      if ((x>0)&&(y>0)&&(srcp[-7]==srcp[0])) neighbors|=0x80;
+      if ((y>0)&&(srcp[-6]==srcp[0])) neighbors|=0x40;
+      if ((y>0)&&(x<5)&&(srcp[-5]==srcp[0])) neighbors|=0x20;
+      if ((x>0)&&(srcp[-1]==srcp[0])) neighbors|=0x10;
+      if ((x<5)&&(srcp[1]==srcp[0])) neighbors|=0x08;
+      if ((x>0)&&(y<5)&&(srcp[5]==srcp[0])) neighbors|=0x04;
+      if ((y<5)&&(srcp[6]==srcp[0])) neighbors|=0x02;
+      if ((x<5)&&(y<5)&&(srcp[7]==srcp[0])) neighbors|=0x01;
+      if (neighbors==0xff) *dstp=0; // Full inner. Effectively vacant.
+      else if (neighbors==0xdf) *dstp=0x21; // Concave corners...
+      else if (neighbors==0x7f) *dstp=0x21|0x40;
+      else if (neighbors==0xfb) *dstp=0x21|0x80;
+      else if (neighbors==0xfe) *dstp=0x21|0xc0;
+      else if ((neighbors&0x1f)==0x1f) *dstp=0x10; // Edges...
+      else if ((neighbors&0x6b)==0x6b) *dstp=0x10|0x40;
+      else if ((neighbors&0xf8)==0xf8) *dstp=0x10|0x80;
+      else if ((neighbors&0xd6)==0xd6) *dstp=0x10|0xc0;
+      else if ((neighbors&0x16)==0x16) *dstp=0x11; // Corners...
+      else if ((neighbors&0x0b)==0x0b) *dstp=0x11|0x40;
+      else if ((neighbors&0x68)==0x68) *dstp=0x11|0x80;
+      else if ((neighbors&0xd0)==0xd0) *dstp=0x11|0xc0;
+      // No other positive arrangement is possible; leave it zero if something's broken.
+    }
+  }
+  
+  /* Turn (tileidv) into tile vertices.
+   * Final tileids are from a 4x4 block that can be shifted 2, 4, or 6 spaces right for animation.
+   */
+  int dsty=SPRITE->watery0+(SPRITE->qy-1)*NS_sys_tilesize+(NS_sys_tilesize>>2);
+  for (y=0,srcp=tileidv;y<6;y++,dsty+=NS_sys_tilesize>>1) {
+    int dstx=SPRITE->waterx0+(SPRITE->qx-1)*NS_sys_tilesize+(NS_sys_tilesize>>2);
+    int x=0; for (;x<6;x++,dstx+=NS_sys_tilesize>>1,srcp++) {
+      if (!*srcp) continue;
+      struct egg_render_tile *vtx=SPRITE->watertilev+SPRITE->watertilec++;
+      vtx->x=dstx;
+      vtx->y=dsty;
+      vtx->tileid=((*srcp)&0x3f);
+      switch ((*srcp)&0xc0) {
+        case 0x40: vtx->xform=EGG_XFORM_SWAP|EGG_XFORM_XREV; break;
+        case 0x80: vtx->xform=EGG_XFORM_XREV|EGG_XFORM_YREV; break;
+        case 0xc0: vtx->xform=EGG_XFORM_SWAP|EGG_XFORM_YREV; break;
+        default: vtx->xform=0;
+      }
+    }
+  }
 }
 
 /* Water plants.
@@ -224,6 +336,7 @@ static void hero_update_motion_quantized(struct sprite *sprite,double elapsed) {
    * When the input changes, face that direction.
    * A change to (ind) or (faced) does not change our actual motion, not yet.
    */
+  int fxo=SPRITE->facedx,fyo=SPRITE->facedy;
   int nindx=0,nindy=0;
   switch (g.session->input&(EGG_BTN_LEFT|EGG_BTN_RIGHT)) {
     case EGG_BTN_LEFT: nindx=-1; break;
@@ -268,6 +381,7 @@ static void hero_update_motion_quantized(struct sprite *sprite,double elapsed) {
    * If we reach it and the associated key is still held, set a new target.
    * Otherwise, stop there and allow fresh motion.
    */
+  int qxo=SPRITE->qx,qyo=SPRITE->qy;
   int xmok=0,ymok=0; // True if we're at the target on the given axis, ie new motion is ok.
   double targetx=SPRITE->qx+0.5;
   double targety=SPRITE->qy+0.5;
@@ -318,12 +432,25 @@ static void hero_update_motion_quantized(struct sprite *sprite,double elapsed) {
       }
     }
   }
+  if ((qxo!=SPRITE->qx)||(qyo!=SPRITE->qy)) {
+    egg_play_sound(RID_sound_step,1.0,0.0);
+    hero_rebuild_watertiles(sprite);
+  } else if ((fxo!=SPRITE->facedx)||(fyo!=SPRITE->facedy)) {
+    egg_play_sound(RID_sound_turn,1.0,0.0);
+    hero_rebuild_watertiles(sprite);
+  }
 }
 
 /* Update.
  */
 
 static void _hero_update(struct sprite *sprite,double elapsed) {
+
+  // Animate the highlight.
+  if ((SPRITE->highlightclock-=elapsed)<=0.0) {
+    SPRITE->highlightclock+=0.125;
+    if (++(SPRITE->highlightframe)>=4) SPRITE->highlightframe=0;
+  }
 
   // Walking etc.
   if (g.quantize_hero) {
@@ -345,43 +472,30 @@ static void _hero_update(struct sprite *sprite,double elapsed) {
  */
  
 void hero_prerender(struct sprite *sprite,int x0,int y0) {
-  #if 0 /* Old approach (g.corrupt_always!=0), with a fixed corruption zone and variable creation zone. */
-  /* Corruption zone.
-   */
-  int x=SPRITE->qx-1,y=SPRITE->qy-1,w=3,h=3;
-  if (x<0) { w+=x; x=0; } else if (x+w>g.session->mapw) w=g.session->mapw-x;
-  if (y<0) { h+=y; y=0; } else if (y+h>g.session->maph) h=g.session->maph-y;
-  frame_rect(x0+x*NS_sys_tilesize,y0+y*NS_sys_tilesize,w*NS_sys_tilesize,h*NS_sys_tilesize,0xff000080);
   
-  /* Creation zone.
-   */
-  struct delta2d storage[WATER_LIMIT];
-  int patternc=waterpattern_get(storage,sprite,SPRITE->waterpattern);
-  const struct delta2d *delta=storage;
-  for (;patternc-->0;delta++) {
-    int x=SPRITE->qx+delta->dx;
-    int y=SPRITE->qy+delta->dy;
-    if ((x>=0)&&(y>=0)&&(x<g.session->mapw)&&(y<g.session->maph)) {
-      frame_rect(x0+x*NS_sys_tilesize,y0+y*NS_sys_tilesize,NS_sys_tilesize,NS_sys_tilesize,0x4050ff80);
-    }
+  // Deferred prep.
+  if (SPRITE->waterx0<0) {
+    SPRITE->waterx0=x0;
+    SPRITE->watery0=y0;
+    hero_rebuild_watertiles(sprite);
   }
-  #endif
   
-  /* New approach, we can ask for the on-demand mutation zones no matter which way we're operating. */
-  struct delta2d storage[WATER_LIMIT];
-  int patternc=waterpattern_get_ondemand(storage,sprite,SPRITE->waterpattern);
-  const struct delta2d *delta=storage;
-  for (;patternc-->0;delta++) {
-    int x=SPRITE->qx+delta->dx;
-    int y=SPRITE->qy+delta->dy;
-    if ((x>=0)&&(y>=0)&&(x<g.session->mapw)&&(y<g.session->maph)) {
-      if (delta->rate>0.0) {
-        frame_rect(x0+x*NS_sys_tilesize,y0+y*NS_sys_tilesize,NS_sys_tilesize,NS_sys_tilesize,0x4050ff80);
-      } else if (delta->rate<0.0) {
-        frame_rect(x0+x*NS_sys_tilesize,y0+y*NS_sys_tilesize,NS_sys_tilesize,NS_sys_tilesize,0xff000080);
-      }
-    }
+  if (SPRITE->watertilec<1) return;
+  
+  // Animate.
+  struct egg_render_tile *vtx=SPRITE->watertilev;
+  int i=SPRITE->watertilec;
+  for (;i-->0;vtx++) {
+    vtx->tileid=(vtx->tileid&0xf9)|(SPRITE->highlightframe<<1);
   }
+  
+  struct egg_render_uniform un={
+    .mode=EGG_RENDER_TILE,
+    .dsttexid=1,
+    .srctexid=g.texid_halftiles,
+    .alpha=0xff,
+  };
+  egg_render(&un,SPRITE->watertilev,sizeof(struct egg_render_tile)*SPRITE->watertilec);
 }
 
 /* Render.
@@ -391,6 +505,12 @@ static void _hero_render(struct sprite *sprite,int x,int y,struct tilerenderer *
   uint8_t tileid=0x12;
   uint8_t xform=0; // Natural orientation of watercan is left.
   if (SPRITE->stickydx>0) xform=EGG_XFORM_XREV;
+  
+  // Shadow tile is centered, xform doesn't matter. Offset depending on main's xform.
+  int shadowdx=6;
+  if (xform) shadowdx=-shadowdx;
+  tilerenderer_add(tr,x+shadowdx,y+4,0x17,0);
+  
   if (SPRITE->pourclock>0.500) { // alternate 3,4
     int frame=(int)(SPRITE->pourclock*2.000)&1;
     tileid+=frame?3:4;

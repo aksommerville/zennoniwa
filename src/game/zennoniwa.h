@@ -21,6 +21,7 @@ extern struct g {
   int pvinput;
   int texid_tilesheet;
   int texid_font;
+  int texid_halftiles;
   struct session *session;
   struct modal *modal;
   int quantize_hero; // Dev only. TODO Once we choose which way we like, remove the other.

@@ -139,6 +139,12 @@ void session_render(struct session *session) {
         if (cell->life>0.0) havelife=1;
       }
     }
+    // Focus cell indicators.
+    if (session->hero) {
+      tilerenderer_flush(&tr);
+      hero_prerender(session->hero,fieldx,fieldy);
+    }
+    // Plants
     if (havelife) {
       tilerenderer_flush(&tr);
       struct fancyrenderer fr={0};
@@ -154,13 +160,6 @@ void session_render(struct session *session) {
       }
       fancyrenderer_flush(&fr);
     }
-  }
-  
-  /* Focus cell indicators.
-   */
-  if (session->hero) {
-    tilerenderer_flush(&tr);
-    hero_prerender(session->hero,fieldx,fieldy);
   }
   
   /* Sprites.
