@@ -449,7 +449,7 @@ static void _hero_update(struct sprite *sprite,double elapsed) {
   // Animate the highlight.
   if ((SPRITE->highlightclock-=elapsed)<=0.0) {
     SPRITE->highlightclock+=0.125;
-    if (++(SPRITE->highlightframe)>=4) SPRITE->highlightframe=0;
+    if (++(SPRITE->highlightframe)>=8) SPRITE->highlightframe=0;
   }
 
   // Walking etc.
@@ -486,7 +486,7 @@ void hero_prerender(struct sprite *sprite,int x0,int y0) {
   struct egg_render_tile *vtx=SPRITE->watertilev;
   int i=SPRITE->watertilec;
   for (;i-->0;vtx++) {
-    vtx->tileid=(vtx->tileid&0xf9)|(SPRITE->highlightframe<<1);
+    vtx->tileid=(vtx->tileid&0xf1)|(SPRITE->highlightframe<<1);
   }
   
   struct egg_render_uniform un={
