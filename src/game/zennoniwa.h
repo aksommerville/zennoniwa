@@ -8,8 +8,8 @@ struct fancyrenderer;
 #include "opt/stdlib/egg-stdlib.h"
 #include "egg_res_toc.h"
 #include "shared_symbols.h"
-#include "session.h"
 #include "sprite/sprite.h"
+#include "session.h"
 #include "modal/modal.h"
 
 #define FBW 640

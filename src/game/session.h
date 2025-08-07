@@ -55,4 +55,6 @@ void session_render(struct session *session);
 int session_load_map(struct session *session,int rid);
 int session_load_next(struct session *session);
 
+struct sprite *session_spawn_sprite(struct session *session,const struct sprite_type *type,double x,double y,uint32_t arg);
+
 #endif

@@ -220,7 +220,7 @@ static void session_drop_sprites(struct session *session) {
 /* Spawn sprite.
  */
  
-static struct sprite *session_spawn_sprite(struct session *session,const struct sprite_type *type,double x,double y,uint32_t arg) {
+struct sprite *session_spawn_sprite(struct session *session,const struct sprite_type *type,double x,double y,uint32_t arg) {
   if (session->spritec>=session->spritea) {
     int na=session->spritea+32;
     if (na>INT_MAX/sizeof(void*)) return 0;

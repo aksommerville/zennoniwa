@@ -27,9 +27,11 @@
 #define NS_sprtype_dummy 0
 #define NS_sprtype_hero 1
 #define NS_sprtype_rock 2
+#define NS_sprtype_toast 3
 #define FOR_EACH_SPRTYPE \
   _(dummy) \
   _(hero) \
-  _(rock)
+  _(rock) \
+  _(toast)
 
 #endif
