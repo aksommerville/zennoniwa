@@ -34,6 +34,11 @@ struct session *session_new() {
  */
  
 static void session_win(struct session *session) {
+  // (lscore.time,pinkc) get updated on the fly, they're already ready.
+  session->lscore.life=session->life;
+  session->tscore.time+=session->lscore.time;
+  session->tscore.life+=session->lscore.life;
+  session->tscore.pinkc+=session->lscore.pinkc;
   if (!g.modal) g.modal=modal_new(&modal_type_denouement);
 }
 
@@ -42,6 +47,8 @@ static void session_win(struct session *session) {
  
 void session_update(struct session *session,double elapsed,int input,int pvinput) {
   int i;
+  
+  session->lscore.time+=elapsed;
   
   // Update input blackout.
   if (session->input_blackout) {
@@ -125,6 +132,7 @@ void session_render(struct session *session) {
    */
   int fieldx=(FBW>>1)-((NS_sys_tilesize*session->mapw)>>1);
   int fieldy=(FBH>>1)-((NS_sys_tilesize*session->maph)>>1);
+  session->lscore.pinkc=0;
   if (session->cellv) {
     int dstx0=fieldx+(NS_sys_tilesize>>1);
     int dsty=fieldy+(NS_sys_tilesize>>1);
@@ -155,6 +163,7 @@ void session_render(struct session *session) {
           if (cell->life<=0.0) continue;
           int frame=cell->life*5.0;
           if (frame<0) frame=0; else if (frame>4) frame=4;
+          if (frame==4) session->lscore.pinkc++; // Set (pinkc) based on tiles rendered, so the score can't help staying in sync with the visuals.
           fancyrenderer_add(&fr,dstx,dsty,0x02+frame,0,0,NS_sys_tilesize,0,0xff);
         }
       }
@@ -254,6 +263,9 @@ static int session_apply_map_command(struct session *session,uint8_t opcode,cons
 int session_load_map(struct session *session,int rid) {
   session->rid=rid;
   session->input_blackout=1;
+  session->lscore.time=0.0;
+  session->lscore.life=0.0;
+  session->lscore.pinkc=0;
   egg_play_song(RID_song_willow_reed,0,1);
 
   const uint8_t *serial=0;

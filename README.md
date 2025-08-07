@@ -13,7 +13,7 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
  - [x] Quantize hero position. Keep it toggleable until we decide.
  - [ ] Post-level denouement modal.
  - [ ] Gameover modal.
- - [ ] Scorekeeping.
+ - [x] Scorekeeping.
  - [ ] Music.
  - [ ] Sound effects.
  - [ ] Graphics.

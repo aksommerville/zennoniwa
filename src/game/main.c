@@ -18,6 +18,8 @@ int egg_client_init() {
   if (!(g.rom=malloc(g.romc))) return -1;
   egg_rom_get(g.rom,g.romc);
   
+  hiscore_load();
+  
   if (egg_texture_load_image(g.texid_tilesheet=egg_texture_new(),RID_image_tilesheet)<0) return -1;
   if (egg_texture_load_image(g.texid_font=egg_texture_new(),RID_image_fonttiles)<0) return -1;
   if (egg_texture_load_image(g.texid_halftiles=egg_texture_new(),RID_image_halftiles)<0) return -1;
@@ -59,8 +61,6 @@ void egg_client_update(double elapsed) {
   if (g.session&&!g.modal) { // <-- important: If we just removed the modal this cycle, DO update the session.
     if (g.session->load_failed) {
       g.modal=modal_new(&modal_type_gameover);
-      session_del(g.session);
-      g.session=0;
     } else {
       session_update(g.session,elapsed,input,pvinput);
     }

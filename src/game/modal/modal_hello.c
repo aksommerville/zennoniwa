@@ -78,6 +78,7 @@ static int _hello_init(struct modal *modal) {
   hello_add_option(modal,"By AK Sommerville",-1,0x402808ff,0);
   hello_add_option(modal,"GDEX Game Jam",-1,0x402808ff,0);
   hello_add_option(modal,"August 2025",-1,0x402808ff,0);
+  //TODO Show hiscore if present.
   hello_layout_options(modal);
   egg_play_song(RID_song_only_soil_deep,0,1);
   while ((MODAL->optionp<MODAL->optionc)&&!MODAL->optionv[MODAL->optionp].enabled) MODAL->optionp++;

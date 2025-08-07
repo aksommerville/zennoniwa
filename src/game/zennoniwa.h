@@ -26,6 +26,7 @@ extern struct g {
   struct modal *modal;
   int quantize_hero; // Dev only. TODO Once we choose which way we like, remove the other.
   int corrupt_always; // Dev only. ''
+  struct score hiscore;
 } g;
 
 int res_get(void *dstpp,int tid,int rid);
@@ -37,6 +38,8 @@ void frame_rect(int x,int y,int w,int h,uint32_t rgba);
 void blit_texture(int dstx,int dsty,int texid,int w,int h,uint8_t alpha);
 void render_grid(int x,int y,const uint8_t *src,int colc,int rowc);//XXX
 void render_text(int x,int y,const char *src,int srcc,uint32_t rgba); // (x,y) is the center of the first glyph
+void render_time(int x,int y,double s,uint32_t rgba);
+void render_uint(int x,int y,int v,int limit,uint32_t rgba);
 struct tilerenderer { struct egg_render_tile vtxv[64]; int vtxc; uint32_t tint; int texid; };
 void tilerenderer_add(struct tilerenderer *tr,int x,int y,uint8_t tileid,uint8_t xform);
 void tilerenderer_flush(struct tilerenderer *tr);
@@ -51,5 +54,12 @@ void fancyrenderer_add(struct fancyrenderer *fr,
   uint32_t prim_rgba
 );
 void fancyrenderer_flush(struct fancyrenderer *fr);
+
+/* These both operate directly on (g.hiscore).
+ * Load should only happen once, at startup.
+ * Gameover modal should populate (g.hiscore) and save if warranted, as it tabulates the score for display.
+ */
+void hiscore_load();
+void hiscore_save();
 
 #endif
