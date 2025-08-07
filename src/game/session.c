@@ -143,7 +143,9 @@ void session_render(struct session *session) {
       int dstx=dstx0;
       int xi=session->mapw;
       for (;xi-->0;dstx+=NS_sys_tilesize,cell++) {
-        tilerenderer_add(&tr,dstx,dsty,cell->tileid,0);
+        uint8_t xform=0;
+        if (!cell->tileid) xform=(yi+xi)&7;
+        tilerenderer_add(&tr,dstx,dsty,cell->tileid,xform);
         if (cell->life>0.0) havelife=1;
       }
     }
