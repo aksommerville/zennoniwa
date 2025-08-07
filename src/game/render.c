@@ -94,7 +94,7 @@ void render_text(int x,int y,const char *src,int srcc,uint32_t rgba) {
   if (!src) return;
   if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
   struct tilerenderer tr={.tint=rgba,.texid=g.texid_font};
-  for (;srcc-->0;src++,x+=16) {
+  for (;srcc-->0;src++,x+=8) {
     tilerenderer_add(&tr,x,y,*src,0);
   }
   tilerenderer_flush(&tr);
