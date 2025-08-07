@@ -10,3 +10,6 @@
 image image:tilesheet
 plant @10,3 0x80 0
 hero @4,2
+sprite @3,4 sprite:rock2
+sprite @8,4 sprite:rock1
+sprite @10,6 sprite:rock3

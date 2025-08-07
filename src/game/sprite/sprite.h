@@ -7,6 +7,16 @@
 struct sprite;
 struct sprite_type;
 
+struct sprres {
+  uint16_t rid;
+  uint8_t tileid;
+  const struct sprite_type *type;
+  // (imageid,xform) are stored but I don't expect to use them.
+};
+
+int sprres_init();
+const struct sprres *sprres_get(int rid);
+
 struct sprite {
   const struct sprite_type *type;
   double x,y;
@@ -34,8 +44,10 @@ struct sprite *sprite_new(const struct sprite_type *type,double x,double y,uint3
 #define _(tag) extern const struct sprite_type sprite_type_##tag;
 FOR_EACH_SPRTYPE
 #undef _
+const struct sprite_type *sprite_type_by_id(int id);
 
 /* Nonzero if position changed.
+ * XXX I've switched to quantized hero motion, no need for this anymore.
  */
 int physics_rectify(struct sprite *sprite);
 

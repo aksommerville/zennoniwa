@@ -74,7 +74,7 @@ static void _gameover_render(struct modal *modal) {
     render_text(50,136,"Life:",-1,0xffff00ff);
     render_uint(140,136,(int)(g.session->tscore.life*1000.0),999,0xffff00ff);
     render_uint(320,136,(int)(g.hiscore.life*1000.0),999,0xffff00ff);
-    render_text(50,152,"Pink",-1,0xffff00ff);
+    render_text(50,152,"Pink:",-1,0xffff00ff);
     render_uint(140,152,g.session->tscore.pinkc,999,0xffff00ff);
     render_uint(320,152,g.hiscore.pinkc,999,0xffff00ff);
   }

@@ -255,6 +255,14 @@ static int session_apply_map_command(struct session *session,uint8_t opcode,cons
           cell->life=life/255.0;
         }
       } break;
+    case CMD_map_sprite: {
+        int x=arg[0],y=arg[1],rid=(arg[2]<<8)|arg[3];
+        const struct sprres *sprres=sprres_get(rid);
+        uint32_t sarg=0; // Usually I include a 32-bit argument in the map command. Here we didn't.
+        struct sprite *sprite=session_spawn_sprite(session,sprres->type,x+0.5,y+0.5,sarg);
+        if (!sprite) return -1;
+        sprite->tileid=sprres->tileid;
+      } break;
   }
   return 0;
 }

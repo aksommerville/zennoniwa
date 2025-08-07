@@ -17,6 +17,7 @@ int egg_client_init() {
   g.romc=egg_rom_get(0,0);
   if (!(g.rom=malloc(g.romc))) return -1;
   egg_rom_get(g.rom,g.romc);
+  if (sprres_init()<0) return -1;
   
   hiscore_load();
   
