@@ -53,11 +53,11 @@ static void hello_layout_options(struct modal *modal) {
   int i=MODAL->optionc;
   for (;i-->0;option++) {
     if (option->enabled) {
-      option->x=200;
+      option->x=300;
       option->y=enabledy;
-      enabledy+=24;
+      enabledy+=16;
     } else {
-      option->x=FBW-option->srcc*16;
+      option->x=FBW-option->srcc*8-16;
       option->y=disabledy;
       disabledy-=16;
     }
@@ -72,12 +72,13 @@ static int _hello_init(struct modal *modal) {
   egg_texture_get_size(&MODAL->titlew,&MODAL->titleh,MODAL->titleid);
   hello_add_option(modal,"Play",4,0xffffffff,OPTION_ID_PLAY);
   hello_add_option(modal,"Quit",4,0xffffffff,OPTION_ID_QUIT);
-  hello_add_option(modal,g.quantize_hero?"Quantized":"Continuous",-1,0xffffffff,OPTION_ID_QUANTIZE_HERO);
-  hello_add_option(modal,g.corrupt_always?"Corrupt Always":"Corrupt On Demand",-1,0xffffffff,OPTION_ID_CORRUPT_ALWAYS);
+  //hello_add_option(modal,g.quantize_hero?"Quantized":"Continuous",-1,0xffffffff,OPTION_ID_QUANTIZE_HERO);
+  //hello_add_option(modal,g.corrupt_always?"Corrupt Always":"Corrupt On Demand",-1,0xffffffff,OPTION_ID_CORRUPT_ALWAYS);
   hello_add_option(modal,"and Alex Hansen",-1,0x402808ff,0);
   hello_add_option(modal,"By AK Sommerville",-1,0x402808ff,0);
   hello_add_option(modal,"GDEX Game Jam",-1,0x402808ff,0);
   hello_add_option(modal,"August 2025",-1,0x402808ff,0);
+  //TODO Show hiscore if present.
   hello_layout_options(modal);
   egg_play_song(RID_song_only_soil_deep,0,1);
   while ((MODAL->optionp<MODAL->optionc)&&!MODAL->optionv[MODAL->optionp].enabled) MODAL->optionp++;

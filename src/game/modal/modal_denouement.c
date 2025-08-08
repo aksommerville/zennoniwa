@@ -44,8 +44,17 @@ static void _denouement_update(struct modal *modal,double elapsed) {
  */
  
 static void _denouement_render(struct modal *modal) {
+  //TODO highly temporary
   fill_rect(0,0,FBW,FBH,0x1020c0ff);
   render_text(40,100,"Level complete",-1,0xffffffff);
+  if (g.session) {
+    render_text(50,120,"Time:",-1,0xffff00ff);
+    render_time(140,120,g.session->lscore.time,0xffff00ff);
+    render_text(50,136,"Life:",-1,0xffff00ff);
+    render_uint(140,136,(int)(g.session->lscore.life*1000.0),999,0xffff00ff);
+    render_text(50,152,"Pink:",-1,0xffff00ff);
+    render_uint(140,152,g.session->lscore.pinkc,999,0xffff00ff);
+  }
 }
 
 /* Type definition.

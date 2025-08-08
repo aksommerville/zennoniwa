@@ -10,6 +10,17 @@ struct sprite;
 #define SESSION_TERMCLOCK_LIMIT 2.000
 #define SESSION_TERMCLOCK_BEGIN 1.000
 
+struct score {
+  double time; // s
+  double life; // 0..1
+  int pinkc;
+};
+
+/* Decode is guaranteed not to touch (score) if input malformed.
+ */
+int score_encode(char *dst,int dsta/*17*/,struct score *score);
+int score_decode(struct score *score,const char *src,int srcc);
+
 struct session {
 
   struct sprite **spritev;
@@ -30,6 +41,9 @@ struct session {
   int input,pvinput;
   int rid;
   int load_failed; // Nonzero if the last map load failed; gameover.
+  
+  struct score lscore; // Score for this or most recent level.
+  struct score tscore; // Score for the entire session. (life) is the sum per level; need to divide by levels played.
 };
 
 void session_del(struct session *session);
@@ -40,5 +54,7 @@ void session_render(struct session *session);
 
 int session_load_map(struct session *session,int rid);
 int session_load_next(struct session *session);
+
+struct sprite *session_spawn_sprite(struct session *session,const struct sprite_type *type,double x,double y,uint32_t arg);
 
 #endif

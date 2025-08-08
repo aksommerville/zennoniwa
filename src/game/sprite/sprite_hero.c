@@ -10,6 +10,7 @@
 #define WATER_LIMIT 9 /* The most cells addressable by a waterpattern. */
 
 static void hero_rebuild_watertiles(struct sprite *sprite);
+static int hero_move_ok(const struct sprite *sprite,int x,int y);
 
 struct sprite_hero {
   struct sprite hdr;
@@ -132,6 +133,13 @@ static int waterpattern_get_ondemand(struct delta2d *dst/*WATER_LIMIT*/,struct s
         }
       } break;
   }
+  // Refine a bit further: If any cell is slated for Creation but is not passable (ie a rock), call it Corruption.
+  for (delta=dst,i=9;i-->0;delta++) {
+    if (delta->rate<=0.0) continue;
+    if (!hero_move_ok(sprite,SPRITE->qx+delta->dx,SPRITE->qy+delta->dy)) {
+      delta->rate=CORRUPTION_RATE;
+    }
+  }
   return 9;
 }
 
@@ -201,12 +209,17 @@ static void hero_rebuild_watertiles(struct sprite *sprite) {
   }
   
   /* Turn (tileidv) into tile vertices.
+   * Skip any outside the playfield.
    * Final tileids are from a 4x4 block that can be shifted 2, 4, or 6 spaces right for animation.
    */
   int dsty=SPRITE->watery0+(SPRITE->qy-1)*NS_sys_tilesize+(NS_sys_tilesize>>2);
   for (y=0,srcp=tileidv;y<6;y++,dsty+=NS_sys_tilesize>>1) {
+    int row=SPRITE->qy-1+(y>>1);
     int dstx=SPRITE->waterx0+(SPRITE->qx-1)*NS_sys_tilesize+(NS_sys_tilesize>>2);
     int x=0; for (;x<6;x++,dstx+=NS_sys_tilesize>>1,srcp++) {
+      if ((row<0)||(row>=NS_sys_maph)) continue;
+      int col=SPRITE->qx-1+(x>>1);
+      if ((col<0)||(col>=NS_sys_mapw)) continue;
       if (!*srcp) continue;
       struct egg_render_tile *vtx=SPRITE->watertilev+SPRITE->watertilec++;
       vtx->x=dstx;
@@ -237,11 +250,18 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
     ?waterpattern_get_always(storage,sprite,SPRITE->waterpattern)
     :waterpattern_get_ondemand(storage,sprite,SPRITE->waterpattern);
   const struct delta2d *delta=storage;
+  int highlightc=0;
+  double highlightx=0.0,highlighty=0.0;
   for (;patternc-->0;delta++) {
     int x=SPRITE->qx+delta->dx;
     int y=SPRITE->qy+delta->dy;
     if ((x>=0)&&(y>=0)&&(x<g.session->mapw)&&(y<g.session->maph)) {
       struct cell *cell=g.session->cellv+y*g.session->mapw+x;
+      if ((delta->rate>0.0)&&(cell->life<=0.0)) {
+        highlightc++;
+        highlightx+=x+0.5;
+        highlighty+=y+0.5;
+      }
       cell->life+=elapsed*delta->rate;
       if (cell->life>1.0) {
         cell->life=1.0;
@@ -249,6 +269,12 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
         cell->life=0.0;
       }
     }
+  }
+  if (highlightc) {
+    egg_play_sound(RID_sound_newlife,1.0,0.0);
+    double dstx=highlightx/highlightc;
+    double dsty=highlighty/highlightc;
+    struct sprite *toast=session_spawn_sprite(g.session,&sprite_type_toast,dstx,dsty,0x220c0000);
   }
 }
 
@@ -271,6 +297,27 @@ static void hero_apply_corruption(struct sprite *sprite,double elapsed) {
       hero_apply_corruption_1(sprite,SPRITE->qx+dx,SPRITE->qy+dy,elapsed);
     }
   }
+}
+
+/* Is a given cell ok to move to?
+ * Requested coords may be OOB.
+ * Includes consideration of solid sprites.
+ */
+ 
+static int hero_move_ok(const struct sprite *sprite,int x,int y) {
+  if ((x<0)||(y<0)||(x>=g.session->mapw)||(y>=g.session->maph)) return 0;
+  struct sprite **rockp=g.session->spritev;
+  int i=g.session->spritec;
+  for (;i-->0;rockp++) {
+    struct sprite *rock=*rockp;
+    if (rock->defunct) continue;
+    if (rock->type!=&sprite_type_rock) continue;
+    int rx=(int)rock->x,ry=(int)rock->y;
+    if (rx!=x) continue;
+    if (ry!=y) continue;
+    return 0;
+  }
+  return 1;
 }
 
 /* Walking.
@@ -390,24 +437,23 @@ static void hero_update_motion_quantized(struct sprite *sprite,double elapsed) {
   const double close_enough=0.010; // <1/32
   if (dx>close_enough) {
     if ((sprite->x+=speed*elapsed)>=targetx) {
-      //TODO if there are impassable cells, we need to check here (and the three other cases)
-      if ((SPRITE->indx==1)&&(SPRITE->qx<g.session->mapw-1)) SPRITE->qx++;
+      if ((SPRITE->indx==1)&&hero_move_ok(sprite,SPRITE->qx+1,SPRITE->qy)) SPRITE->qx++;
       else { sprite->x=targetx; xmok=1; }
     }
   } else if (dx<-close_enough) {
     if ((sprite->x-=speed*elapsed)<=targetx) {
-      if ((SPRITE->indx==-1)&&(SPRITE->qx>0)) SPRITE->qx--;
+      if ((SPRITE->indx==-1)&&hero_move_ok(sprite,SPRITE->qx-1,SPRITE->qy)) SPRITE->qx--;
       else { sprite->x=targetx; xmok=1; }
     }
   } else { sprite->x=targetx; xmok=1; }
   if (dy>close_enough) {
     if ((sprite->y+=speed*elapsed)>=targety) {
-      if ((SPRITE->indy==1)&&(SPRITE->qy<g.session->maph-1)) SPRITE->qy++;
+      if ((SPRITE->indy==1)&&hero_move_ok(sprite,SPRITE->qx,SPRITE->qy+1)) SPRITE->qy++;
       else { sprite->y=targety; ymok=1; }
     }
   } else if (dy<-close_enough) {
     if ((sprite->y-=speed*elapsed)<=targety) {
-      if ((SPRITE->indy==-1)&&(SPRITE->qy>0)) SPRITE->qy--;
+      if ((SPRITE->indy==-1)&&hero_move_ok(sprite,SPRITE->qx,SPRITE->qy-1)) SPRITE->qy--;
       else { sprite->y=targety; ymok=1; }
     }
   } else { sprite->y=targety; ymok=1; }
@@ -426,7 +472,7 @@ static void hero_update_motion_quantized(struct sprite *sprite,double elapsed) {
     if (ndx||ndy) {
       int dstcol=SPRITE->qx+ndx;
       int dstrow=SPRITE->qy+ndy;
-      if ((dstcol>=0)&&(dstrow>=0)&&(dstcol<g.session->mapw)&&(dstrow<g.session->maph)) {
+      if (hero_move_ok(sprite,dstcol,dstrow)) {
         SPRITE->qx=dstcol;
         SPRITE->qy=dstrow;
       }

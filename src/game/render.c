@@ -94,10 +94,44 @@ void render_text(int x,int y,const char *src,int srcc,uint32_t rgba) {
   if (!src) return;
   if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
   struct tilerenderer tr={.tint=rgba,.texid=g.texid_font};
-  for (;srcc-->0;src++,x+=16) {
+  for (;srcc-->0;src++,x+=8) {
     tilerenderer_add(&tr,x,y,*src,0);
   }
   tilerenderer_flush(&tr);
+}
+
+/* Text formatters.
+ */
+ 
+void render_time(int x,int y,double s,uint32_t rgba) {
+  int ms=(int)(s*1000.0);
+  if (ms<0) ms=0;
+  int sec=ms/1000; ms%=1000;
+  int min=sec/60; sec%=60;
+  if (min>99) { min=99; sec=99; ms=999; }
+  char tmp[9]={
+    '0'+min/10,
+    '0'+min%10,
+    ':',
+    '0'+sec/10,
+    '0'+sec%10,
+    '.',
+    '0'+ms/100,
+    '0'+(ms/10)%10,
+    '0'+ms%10,
+  };
+  render_text(x,y,tmp,sizeof(tmp),rgba);
+}
+
+void render_uint(int x,int y,int v,int limit,uint32_t rgba) {
+  if (v<0) v=0; else if (limit<0) ; else if (v>limit) v=limit;
+  int tmpc=1,ceiling=10;
+  while (v>=ceiling) { tmpc++; if (ceiling>INT_MAX/10) break; ceiling*=10; }
+  char tmp[16];
+  if (tmpc>sizeof(tmp)) return; // not possible
+  int i=tmpc;
+  for (;i-->0;v/=10) tmp[i]='0'+v%10;
+  render_text(x,y,tmp,tmpc,rgba);
 }
 
 /* Structure tile renderer.
