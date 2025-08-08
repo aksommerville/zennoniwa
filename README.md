@@ -14,7 +14,7 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
  - [ ] Post-level denouement modal.
  - [ ] Gameover modal.
  - [x] Scorekeeping.
- - [ ] Music.
+ - [x] Music.
  - [ ] Sound effects.
  - [ ] Graphics.
  - [ ] Maps.

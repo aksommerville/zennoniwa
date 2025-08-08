@@ -125,13 +125,33 @@ void session_render(struct session *session) {
 
   /* Background.
    */
-  fill_rect(0,0,FBW,FBH,0x804000ff);
+  fill_rect(0,0,FBW,FBH,0x286b46ff);
   struct tilerenderer tr={0};
+  #define OTILE(col,row,tileid,xform) tilerenderer_add(&tr,(col)*NS_sys_tilesize+(NS_sys_tilesize>>1),(row)*NS_sys_tilesize+(NS_sys_tilesize>>1),tileid,xform);
+  int x,y;
+  for (x=2;x<=17;x++) {
+    OTILE(x,10,0x34+(x%3),0)
+    OTILE(x,1,0x34+(x%3),EGG_XFORM_YREV)
+  }
+  for (y=2;y<=9;y++) {
+    OTILE(1,y,0x34+(y%3),EGG_XFORM_SWAP|EGG_XFORM_YREV)
+    OTILE(18,y,0x34+(y%3),EGG_XFORM_SWAP)
+  }
+  OTILE(1,1,0x37,EGG_XFORM_XREV|EGG_XFORM_YREV)
+  OTILE(18,1,0x37,EGG_XFORM_YREV)
+  OTILE(1,10,0x37,EGG_XFORM_XREV)
+  OTILE(18,10,0x37,0)
+  for (y=0;y<11;y++) {
+    OTILE(0,y,0x40+(y<<4),0)
+    OTILE(19,y,0x40+(y<<4),EGG_XFORM_XREV)
+  }
+  for (x=2;x<=8;x+=2) OTILE(x,10,0x38,0)
+  for (x=11;x<=17;x+=2) OTILE(x,10,0x38,0)
 
   /* Map and plants.
    */
-  int fieldx=(FBW>>1)-((NS_sys_tilesize*session->mapw)>>1);
-  int fieldy=(FBH>>1)-((NS_sys_tilesize*session->maph)>>1);
+  int fieldx=NS_sys_tilesize*2;
+  int fieldy=NS_sys_tilesize*2;
   session->lscore.pinkc=0;
   if (session->cellv) {
     int dstx0=fieldx+(NS_sys_tilesize>>1);
@@ -188,12 +208,6 @@ void session_render(struct session *session) {
   }
   tilerenderer_flush(&tr);
   
-  /* Quickie indicators for qualified and score. XXX
-   */
-  fill_rect(FBW-20,(FBH>>1)-5,10,10,session->qualified?0x008000ff:0xff0000ff);
-  int barw=session->life*FBW;
-  fill_rect(0,FBH-10,barw,5,0x404060ff);
-  
   /* Fade out if terminating.
    */
   if (session->termclock>SESSION_TERMCLOCK_BEGIN) {
@@ -203,6 +217,8 @@ void session_render(struct session *session) {
       fill_rect(0,0,FBW,FBH,0x1020c000|alpha);
     }
   }
+  
+  #undef OTILE
 }
 
 /* Kill all sprites.

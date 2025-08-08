@@ -21,6 +21,7 @@ static void _gameover_del(struct modal *modal) {
  */
  
 static int _gameover_init(struct modal *modal) {
+  egg_play_song(RID_song_only_soil_deep,0,1);
   if (g.session) {
     int levelc=g.session->rid-1;
     if (levelc<1) levelc=1;
