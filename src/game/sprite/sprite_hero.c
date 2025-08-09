@@ -306,16 +306,8 @@ static void hero_apply_corruption(struct sprite *sprite,double elapsed) {
  
 static int hero_move_ok(const struct sprite *sprite,int x,int y) {
   if ((x<0)||(y<0)||(x>=g.session->mapw)||(y>=g.session->maph)) return 0;
-  struct sprite **rockp=g.session->spritev;
-  int i=g.session->spritec;
-  for (;i-->0;rockp++) {
-    struct sprite *rock=*rockp;
-    if (rock->defunct) continue;
-    if (rock->type!=&sprite_type_rock) continue;
-    int rx=(int)rock->x,ry=(int)rock->y;
-    if (rx!=x) continue;
-    if (ry!=y) continue;
-    return 0;
+  switch (g.session->cellv[y*g.session->mapw+x].tileid) {
+    case 0x30: case 0x31: case 0x32: return 0;
   }
   return 1;
 }

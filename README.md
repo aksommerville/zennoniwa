@@ -20,8 +20,8 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
  - [ ] Maps.
  - [ ] `res_get`: Build a TOC initially rather than decoding the ROM on every access.
  - [ ] Null slots in waterpattern.
- - [ ] Rocks as tile not sprite.
- - [ ] session_render: Indicate completion via stepping stones.
+ - [x] Rocks as tile not sprite.
+ - [x] session_render: Indicate completion via stepping stones.
  
  - [x] Web: Moving pushes the hero OOB near the top left corner. Started happening after adding the hello modal. Doesn't happen natively.
  - - just needed a clean build. Make a note to repair eggdev build
