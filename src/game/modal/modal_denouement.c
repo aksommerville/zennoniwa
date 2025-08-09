@@ -143,9 +143,7 @@ static void denouement_add_label(struct modal *modal,const char *fmt,...) {
 static int count_sands() {
   int i=NS_sys_mapw*NS_sys_maph,sandc=0;
   const struct cell *cell=g.session->cellv;
-  for (;i-->0;cell++) switch (cell->tileid) {
-    case 1: sandc++; break;
-  }
+  for (;i-->0;cell++) if (tileid_is_sand(cell->tileid)) sandc++;
   return sandc;
 }
 

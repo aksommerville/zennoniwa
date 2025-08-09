@@ -15,7 +15,7 @@ static int XXX_count_sand_1(const uint8_t *src,int srcc) {
   if (srcp>srcc-w*h) return 0;
   int i=w*h,c=0;
   for (;i-->0;srcp++) {
-    if (src[srcp]==0x01) c++;
+    if (tileid_is_sand(src[srcp])) c++;
   }
   return c;
 }
@@ -113,4 +113,19 @@ void egg_client_render() {
   } else if (g.session) {
     session_render(g.session);
   }
+}
+
+/* Tile ID.
+ */
+ 
+int tileid_is_sand(uint8_t tileid) {
+  switch (tileid) {
+    case 0x01:
+    case 0xa7: case 0xa8: case 0xa9: case 0xaa:
+    case 0xb7: case 0xb8: case 0xb9: case 0xba:
+    case 0xc7: case 0xc8: case 0xc9: case 0xca:
+    case 0xd7: case 0xd8: case 0xd9: case 0xda:
+      return 1;
+  }
+  return 0;
 }

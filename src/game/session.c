@@ -151,7 +151,7 @@ void session_update(struct session *session,double elapsed,int input,int pvinput
   int trueplantc=0,wantplantc=0,falseplantc=0,noplantc=0;
   const struct cell *cell=session->cellv;
   for (i=session->mapw*session->maph;i-->0;cell++) {
-    if (cell->tileid==1) {//TODO There will be more than just 1 "plant on me" tile.
+    if (tileid_is_sand(cell->tileid)) {
       wantplantc++;
       if (cell->life>0.0) {
         trueplantc++;

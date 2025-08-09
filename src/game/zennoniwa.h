@@ -59,4 +59,6 @@ void fancyrenderer_flush(struct fancyrenderer *fr);
 void hiscore_load();
 void hiscore_save();
 
+int tileid_is_sand(uint8_t tileid);
+
 #endif
