@@ -9,3 +9,4 @@
 
 image image:tilesheet
 hero @8,3
+waterpattern (u16:waterpattern)three

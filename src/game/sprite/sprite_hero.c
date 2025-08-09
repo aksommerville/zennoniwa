@@ -4,9 +4,6 @@
 #define CREATION_RATE    1.000 /* hz */
 #define TURN_TIME        0.100
 
-#define WATERPATTERN_SINGLE 1 /* Just (qx,qy). */
-#define WATERPATTERN_CROSS 2
-#define WATERPATTERN_THREE  3 /* Three in a row, perpendicular to the direction of travel. */
 #define WATER_LIMIT 9 /* The most cells addressable by a waterpattern. */
 
 static void hero_rebuild_watertiles(struct sprite *sprite);
@@ -19,7 +16,6 @@ struct sprite_hero {
   int stickydx; // facedx but retains its value, in case we only get horizontal faces.
   double pourclock;
   int qx,qy; // Quantized position, updates each cycle.
-  int waterpattern;
   double turnclock;
   double highlightclock;
   int highlightframe;
@@ -58,7 +54,6 @@ static int _hero_init(struct sprite *sprite) {
   sprite->xform=0;
   SPRITE->facedy=1;
   SPRITE->stickydx=-1;
-  SPRITE->waterpattern=WATERPATTERN_THREE;
   hero_update_qpos(sprite);
   SPRITE->waterx0=-1; // Signal to rebuild watertiles at the first prerender.
   return 0;
@@ -80,17 +75,17 @@ static int waterpattern_get(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sp
     dst[i].rate=CORRUPTION_RATE;
   }
   switch (pattern) {
-    case WATERPATTERN_SINGLE: {
-        dst[0].rate=CREATION_RATE;
+    case NS_waterpattern_single: {
+        dst[4].rate=CREATION_RATE;
       } break;
-    case WATERPATTERN_CROSS: {
+    case NS_waterpattern_cross: {
         dst[1].rate=CREATION_RATE;
         dst[3].rate=CREATION_RATE;
         dst[4].rate=CREATION_RATE;
         dst[5].rate=CREATION_RATE;
         dst[7].rate=CREATION_RATE;
       } break;
-    case WATERPATTERN_THREE: {
+    case NS_waterpattern_three: {
         if (SPRITE->facedy) {
           dst[3].rate=CREATION_RATE;
           dst[4].rate=CREATION_RATE;
@@ -99,6 +94,15 @@ static int waterpattern_get(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sp
           dst[1].rate=CREATION_RATE;
           dst[4].rate=CREATION_RATE;
           dst[7].rate=CREATION_RATE;
+        }
+      } break;
+    case NS_waterpattern_little_l: {
+        dst[1].rate=CREATION_RATE;
+        dst[4].rate=CREATION_RATE;
+        if (SPRITE->stickydx>0) {
+          dst[5].rate=CREATION_RATE;
+        } else {
+          dst[3].rate=CREATION_RATE;
         }
       } break;
   }
@@ -123,7 +127,7 @@ static void hero_rebuild_watertiles(struct sprite *sprite) {
   /* Get the generic pattern.
    */
   struct delta2d storage[WATER_LIMIT];
-  int patternc=waterpattern_get(storage,sprite,SPRITE->waterpattern);
+  int patternc=waterpattern_get(storage,sprite,g.session->waterpattern);
   
   /* Turn that delta list into a flat 6x6 grid of moods.
    * (0,1,2)=(none,positive,negative), setting 4 at a time.
@@ -216,7 +220,7 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
   }
   SPRITE->pourclock+=elapsed;
   struct delta2d storage[WATER_LIMIT];
-  int patternc=waterpattern_get(storage,sprite,SPRITE->waterpattern);
+  int patternc=waterpattern_get(storage,sprite,g.session->waterpattern);
   const struct delta2d *delta=storage;
   int highlightc=0;
   double highlightx=0.0,highlighty=0.0;

@@ -15,11 +15,12 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
  - [ ] Gameover modal.
  - [x] Scorekeeping.
  - [x] Music.
- - [ ] Sound effects.
+ - [x] Sound effects.
  - [ ] Graphics.
  - [ ] Maps.
+ - [ ] Order maps by difficulty.
  - [ ] `res_get`: Build a TOC initially rather than decoding the ROM on every access.
- - [ ] Null slots in waterpattern.
+ - [x] Null slots in waterpattern.
  - [x] Rocks as tile not sprite.
  - [x] session_render: Indicate completion via stepping stones.
  - [ ] High score at hello modal.

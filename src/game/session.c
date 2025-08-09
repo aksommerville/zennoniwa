@@ -86,7 +86,7 @@ struct session *session_new() {
   session_generate_bgtilev(session);
   session->fishx=130;
   
-  if (session_load_map(session,RID_map_trial)<0) {
+  if (session_load_map(session,1)<0) {
     session_del(session);
     return 0;
   }
@@ -113,6 +113,11 @@ static void session_win(struct session *session) {
  
 void session_update(struct session *session,double elapsed,int input,int pvinput) {
   int i;
+  
+  // East to reset. (for p1, that's "R" by default)
+  if ((input&EGG_BTN_EAST)&&!(pvinput&EGG_BTN_EAST)) {
+    session_load_map(session,session->rid);
+  }
   
   session->lscore.time+=elapsed;
   
@@ -347,6 +352,9 @@ static int session_apply_map_command(struct session *session,uint8_t opcode,cons
           struct sprite *sprite=session_spawn_sprite(session,&sprite_type_hero,x+0.5,y+0.5,0);
         }
       } break;
+    case CMD_map_waterpattern: {
+        session->waterpattern=(arg[0]<<8)|arg[1];
+      } break;
     case CMD_map_plant: {
         int x=arg[0],y=arg[1],life=arg[2];
         if ((x<session->mapw)&&(y<session->maph)) {
@@ -375,6 +383,7 @@ int session_load_map(struct session *session,int rid) {
   session->lscore.time=0.0;
   session->lscore.life=0.0;
   session->lscore.pinkc=0;
+  session->waterpattern=NS_waterpattern_single;
   egg_play_song(RID_song_willow_reed,0,1);
 
   const uint8_t *serial=0;

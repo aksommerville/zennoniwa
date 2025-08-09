@@ -10,10 +10,11 @@
 #define NS_sys_mapw 16
 #define NS_sys_maph 8
 
-#define CMD_map_image     0x20 /* u16:imageid */
-#define CMD_map_hero      0x21 /* u16:position */
-#define CMD_map_plant     0x40 /* u16:position u8:level u8:reserved */
-#define CMD_map_sprite    0x42 /* u16:position u16:spriteid */
+#define CMD_map_image        0x20 /* u16:imageid */
+#define CMD_map_hero         0x21 /* u16:position */
+#define CMD_map_waterpattern 0x22 /* u16:waterpattern */
+#define CMD_map_plant        0x40 /* u16:position u8:level u8:reserved */
+#define CMD_map_sprite       0x42 /* u16:position u16:spriteid */
 
 #define CMD_sprite_image   0x20 /* u16:imageid */
 #define CMD_sprite_tile    0x21 /* u8:tileid, u8:xform */
@@ -31,5 +32,10 @@
   _(dummy) \
   _(hero) \
   _(toast)
+
+#define NS_waterpattern_single 1
+#define NS_waterpattern_cross 2
+#define NS_waterpattern_three 3
+#define NS_waterpattern_little_l 4
 
 #endif
