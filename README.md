@@ -8,23 +8,12 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
 
 ## TODO
 
- - [x] Logical game model.
- - [x] Hello modal.
- - [x] Quantize hero position. Keep it toggleable until we decide.
- - [ ] Post-level denouement modal.
- - [ ] Gameover modal.
- - [x] Scorekeeping.
- - [x] Music.
- - [x] Sound effects.
- - [x] Graphics.
- - [ ] Maps.
+ - [x] Maps. Aim for 12, nice round number.
  - [ ] Order maps by difficulty.
- - [x] `res_get`: Build a TOC initially rather than decoding the ROM on every access. XXX no point
- - [x] Null slots in waterpattern.
- - [x] Rocks as tile not sprite.
- - [x] session_render: Indicate completion via stepping stones.
- - [x] High score at hello modal.
  - [ ] Proper high score calculation (finish maps first). score.c
- 
- - [x] Web: Moving pushes the hero OOB near the top left corner. Started happening after adding the hello modal. Doesn't happen natively.
- - - just needed a clean build. Make a note to repair eggdev build
+ - [ ] Post-level denouement modal.
+ - - [ ] Show the completed plant pattern, a thumbnail of it.
+ - [ ] Gameover modal.
+ - [ ] Corruption kanji
+ - [ ] Sound effect while watering
+ - [ ] Edge sand tiles.

@@ -37,5 +37,6 @@
 #define NS_waterpattern_cross 2
 #define NS_waterpattern_three 3
 #define NS_waterpattern_little_l 4
+#define NS_waterpattern_tee 5
 
 #endif

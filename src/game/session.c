@@ -86,7 +86,7 @@ struct session *session_new() {
   session_generate_bgtilev(session);
   session->fishx=130;
   
-  if (session_load_map(session,1)<0) {
+  if (session_load_map(session,RID_map_fish)<0) {
     session_del(session);
     return 0;
   }

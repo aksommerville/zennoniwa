@@ -105,6 +105,26 @@ static int waterpattern_get(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sp
           dst[3].rate=CREATION_RATE;
         }
       } break;
+    case NS_waterpattern_tee: {
+        dst[4].rate=CREATION_RATE;
+        if (SPRITE->facedx<0) {
+          dst[1].rate=CREATION_RATE;
+          dst[3].rate=CREATION_RATE;
+          dst[7].rate=CREATION_RATE;
+        } else if (SPRITE->facedx>0) {
+          dst[1].rate=CREATION_RATE;
+          dst[5].rate=CREATION_RATE;
+          dst[7].rate=CREATION_RATE;
+        } else if (SPRITE->facedy<0) {
+          dst[1].rate=CREATION_RATE;
+          dst[3].rate=CREATION_RATE;
+          dst[5].rate=CREATION_RATE;
+        } else {
+          dst[3].rate=CREATION_RATE;
+          dst[5].rate=CREATION_RATE;
+          dst[7].rate=CREATION_RATE;
+        }
+      } break;
   }
   // Refine a bit further: If any cell is not reachable, remove it from the pattern.
   int c=9;
