@@ -9,7 +9,7 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
 ## TODO
 
  - [x] Maps. Aim for 12, nice round number.
- - [ ] Order maps by difficulty.
+ - [x] Order maps by difficulty.
  - [ ] Proper high score calculation (finish maps first). score.c
  - [ ] Post-level denouement modal.
  - - [ ] Show the completed plant pattern, a thumbnail of it.
