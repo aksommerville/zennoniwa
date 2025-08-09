@@ -1,15 +1,85 @@
-00000000000000000000000000000000
-00000000000000000000010100000000
+00000000000000000000010000000000
+00000000000000000100000100000000
+00000000000000000000000100000000
 00000000000000000001010101000000
-00000000000000000001010101000000
-00000000000000000000010100000000
-00000000000000000000000000000000
-00000000000000000000000000000000
-00000000000000000000000000000000
+00000000000000000101010101000000
+00000000000001010101010100000000
+00000000000001010001010100000000
+00000000000000010101010000000000
 
 image image:tilesheet
-plant @10,3 0x80 0
-hero @4,2
-sprite @3,4 sprite:rock2
-sprite @8,4 sprite:rock1
-sprite @10,6 sprite:rock3
+
+hero @8,3
+sprite @0,7 sprite:rock2
+
+sprite @5,7 sprite:rock3
+sprite @0,0 sprite:rock2
+sprite @1,0 sprite:rock2
+sprite @15,7 sprite:rock2
+sprite @2,1 sprite:rock2
+sprite @1,1 sprite:rock2
+sprite @0,1 sprite:rock2
+sprite @0,2 sprite:rock2
+sprite @1,2 sprite:rock2
+sprite @2,2 sprite:rock2
+sprite @2,3 sprite:rock2
+sprite @1,3 sprite:rock2
+sprite @0,3 sprite:rock2
+sprite @0,4 sprite:rock2
+sprite @1,4 sprite:rock2
+sprite @2,4 sprite:rock2
+sprite @2,5 sprite:rock2
+sprite @1,5 sprite:rock2
+sprite @0,5 sprite:rock2
+sprite @0,6 sprite:rock2
+sprite @1,6 sprite:rock2
+sprite @2,6 sprite:rock2
+sprite @2,7 sprite:rock2
+sprite @1,7 sprite:rock2
+sprite @4,0 sprite:rock2
+sprite @15,0 sprite:rock2
+sprite @14,0 sprite:rock2
+sprite @14,1 sprite:rock2
+sprite @15,1 sprite:rock2
+sprite @15,2 sprite:rock2
+sprite @14,2 sprite:rock2
+sprite @14,3 sprite:rock2
+sprite @15,3 sprite:rock2
+sprite @15,4 sprite:rock2
+sprite @14,4 sprite:rock2
+sprite @14,5 sprite:rock2
+sprite @15,5 sprite:rock2
+sprite @15,6 sprite:rock2
+sprite @14,6 sprite:rock2
+sprite @14,7 sprite:rock2
+sprite @2,0 sprite:rock2
+sprite @3,0 sprite:rock2
+sprite @3,1 sprite:rock2
+sprite @3,5 sprite:rock2
+sprite @3,2 sprite:rock2
+sprite @12,0 sprite:rock2
+sprite @3,6 sprite:rock2
+sprite @3,7 sprite:rock2
+sprite @4,7 sprite:rock2
+sprite @13,7 sprite:rock2
+sprite @13,6 sprite:rock2
+sprite @13,5 sprite:rock2
+sprite @12,7 sprite:rock2
+sprite @13,2 sprite:rock2
+sprite @13,1 sprite:rock2
+sprite @13,0 sprite:rock2
+sprite @11,7 sprite:rock3
+sprite @12,6 sprite:rock3
+sprite @12,5 sprite:rock3
+sprite @13,4 sprite:rock3
+sprite @13,3 sprite:rock3
+sprite @12,2 sprite:rock3
+sprite @12,1 sprite:rock3
+sprite @11,0 sprite:rock3
+sprite @5,0 sprite:rock3
+sprite @4,1 sprite:rock3
+sprite @4,2 sprite:rock3
+sprite @3,3 sprite:rock3
+sprite @3,4 sprite:rock3
+sprite @4,5 sprite:rock3
+sprite @4,6 sprite:rock3
