@@ -4,8 +4,26 @@
  */
  
 void score_calculate(struct score *score) {
-  //TODO Final score formula. We need the full set of levels first.
-  score->score=score->pinkc;
+  /* 2025-08-09T14:38: My first playthrough with the final maps: 09:05.783;727;139
+   * Was fairly efficient but by no means optimal.
+   * Playing a bit harder 6:27.753 + 128. 333216. Still nowhere near optimal.
+   * There are 290 sand tiles total (see main.c to recalc if maps change). I'm not sure whether it's technically possible for them all to be pink.
+   * Score will saturate at 999999. It's OK for that to be possible, but if so it should be devilishly hard to do.
+   * I think we can ignore the "life" variable. It's telling us essentially the same thing as "pinkc", but it has an unpredictable floor.
+   * So the formula:
+   *  - Completion bonus = 1000
+   *  - Time bonus = max(0, (10:00 - elapsed)s * 1000). Range 0..600000 but the top end is definitely not reachable. 300k might be.
+   *  - Pink bonus = 2000 * pinkc. Range 0..580000.
+   * That makes saturation at least mathematically possible, but I think extremely unlikely (and maybe technically impossible).
+   * The minimum score of 1000 is highly reachable, but probably wouldn't happen by accident.
+   * Try achieving the minimum just to see it: 75000. Getting no pinks is actually a lot harder than you'd think, might be impossible.
+   */
+  score->score=1000; // Completion bonus.
+  double bonussec=10.0*60.0-score->time;
+  if (bonussec>0.0) score->score+=(int)(bonussec*1000.0);
+  score->score+=score->pinkc*2000;
+  if (score->score>999999) score->score=999999;
+  else if (score->score<0) score->score=0; // oops?
 }
 
 /* Encode.

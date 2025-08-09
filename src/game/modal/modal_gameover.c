@@ -29,6 +29,7 @@ static int _gameover_init(struct modal *modal) {
     if (levelc<1) levelc=1;
     g.session->tscore.life/=(double)levelc;
     score_calculate(&g.session->tscore);
+    fprintf(stderr,"Final score: %.06d\n",g.session->tscore.score);
     if (g.session->tscore.score>g.hiscore.score) {
       memcpy(&g.hiscore,&g.session->tscore,sizeof(struct score));
       hiscore_save();

@@ -5,6 +5,47 @@ struct g g={0};
 void egg_client_quit(int status) {
 }
 
+/* XXX TEMP: Read all the maps and count the sand tiles.
+ */
+static int XXX_count_sand_1(const uint8_t *src,int srcc) {
+  if ((srcc<6)||memcmp(src,"\0EMP",4)) return 0;
+  int w=src[4];
+  int h=src[5];
+  int srcp=6;
+  if (srcp>srcc-w*h) return 0;
+  int i=w*h,c=0;
+  for (;i-->0;srcp++) {
+    if (src[srcp]==0x01) c++;
+  }
+  return c;
+}
+static void XXX_count_sand() {
+  int tid=1,srcp=4,c=0,mapc=0;
+  while (srcp<g.romc) {
+    uint8_t lead=g.rom[srcp++];
+    if (!lead) break;
+    switch (lead&0xc0) {
+      case 0x00: tid+=lead; break;
+      case 0x40: srcp+=1; break; // RID, don't bother tracking
+      case 0x80: {
+          if (srcp>g.romc-2) return;
+          int l=(lead&0x3f)<<16;
+          l|=g.rom[srcp++]<<8;
+          l|=g.rom[srcp++];
+          l++;
+          if (srcp>g.romc-l) return;
+          if (tid==EGG_TID_map) {
+            mapc++;
+            c+=XXX_count_sand_1(g.rom+srcp,l);
+          }
+          srcp+=l;
+        } break;
+      default: return;
+    }
+  }
+  fprintf(stderr,"%s:%d: %d sand tiles in %d maps\n",__FILE__,__LINE__,c,mapc);
+}
+
 int egg_client_init() {
 
   int fbw=0,fbh=0;
@@ -18,6 +59,8 @@ int egg_client_init() {
   if (!(g.rom=malloc(g.romc))) return -1;
   egg_rom_get(g.rom,g.romc);
   if (sprres_init()<0) return -1;
+  
+  //XXX_count_sand();
   
   hiscore_load();
   

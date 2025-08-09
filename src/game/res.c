@@ -4,7 +4,6 @@
  */
  
 int res_get(void *dstpp,int tid,int rid) {
-  //TODO index the rom in advance, don't decode on every access
   int rtid=1,rrid=1,srcp=4;
   while (srcp<g.romc) {
     uint8_t lead=g.rom[srcp++];
