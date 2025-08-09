@@ -1,7 +1,7 @@
 #include "game/zennoniwa.h"
 
-#define CORRUPTION_RATE -0.400 /* hz */
-#define CREATION_RATE    0.800 /* hz */
+#define CORRUPTION_RATE -0.600 /* hz */
+#define CREATION_RATE    1.000 /* hz */
 #define TURN_TIME        0.100
 
 #define WATERPATTERN_SINGLE 1 /* Just (qx,qy). */
@@ -102,14 +102,15 @@ static int waterpattern_get(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sp
         }
       } break;
   }
-  // Refine a bit further: If any cell is slated for Creation but is not passable (ie a rock), call it Corruption.
-  for (delta=dst,i=9;i-->0;delta++) {
-    if (delta->rate<=0.0) continue;
+  // Refine a bit further: If any cell is not reachable, remove it from the pattern.
+  int c=9;
+  for (delta=dst+8,i=9;i-->0;delta--) {
     if (!hero_move_ok(sprite,SPRITE->qx+delta->dx,SPRITE->qy+delta->dy)) {
-      delta->rate=CORRUPTION_RATE;
+      c--;
+      memmove(delta,delta+1,sizeof(struct delta2d)*(c-i));
     }
   }
-  return 9;
+  return c;
 }
 
 /* Rebuild vertex list for the waterpattern highlight.
