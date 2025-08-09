@@ -172,7 +172,7 @@ static void hello_move(struct modal *modal,int d) {
     MODAL->optionp+=d;
     if (MODAL->optionp<0) MODAL->optionp=MODAL->optionc-1;
     else if (MODAL->optionp>=MODAL->optionc) MODAL->optionp=0;
-    if (MODAL->optionv[MODAL->optionp].enabled) break;
+    if (MODAL->optionv[MODAL->optionp].enabled>0) break;
   }
   egg_play_sound(RID_sound_uimotion,1.0,0.0);
 }

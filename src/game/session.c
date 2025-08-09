@@ -304,7 +304,7 @@ void session_render(struct session *session) {
     int alpha=(int)(((session->termclock-SESSION_TERMCLOCK_BEGIN)*255.0)/(SESSION_TERMCLOCK_LIMIT-SESSION_TERMCLOCK_BEGIN));
     if (alpha>0) {
       if (alpha>0xff) alpha=0xff;
-      fill_rect(0,0,FBW,FBH,0x1020c000|alpha);
+      fill_rect(0,0,FBW,FBH,0x286b4600|alpha);
     }
   }
 }
