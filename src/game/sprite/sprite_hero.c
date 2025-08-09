@@ -22,6 +22,7 @@ struct sprite_hero {
   struct egg_render_tile watertilev[6*6]; // Four tiles per map tile.
   int watertilec;
   int waterx0,watery0; // Playfield origin for (watertilev). Need to defer until after the first update.
+  double kill_blackout;
 };
 
 #define SPRITE ((struct sprite_hero*)sprite)
@@ -244,6 +245,7 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
   const struct delta2d *delta=storage;
   int highlightc=0;
   double highlightx=0.0,highlighty=0.0;
+  double killx=-1.0,killy=0.0;
   for (;patternc-->0;delta++) {
     int x=SPRITE->qx+delta->dx;
     int y=SPRITE->qy+delta->dy;
@@ -254,11 +256,16 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
         highlightx+=x+0.5;
         highlighty+=y+0.5;
       }
+      int killable=((delta->rate<0.0)&&(cell->life>0.0));
       cell->life+=elapsed*delta->rate;
       if (cell->life>1.0) {
         cell->life=1.0;
       } else if (cell->life<0.0) {
         cell->life=0.0;
+        if (killable) {
+          killx=x+0.5;
+          killy=y+0.5;
+        }
       }
     }
   }
@@ -267,6 +274,10 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
     double dstx=highlightx/highlightc;
     double dsty=highlighty/highlightc;
     struct sprite *toast=session_spawn_sprite(g.session,&sprite_type_toast,dstx,dsty,0x220c0000);
+  } else if ((killx>0.0)&&(SPRITE->kill_blackout<=0.0)) {
+    SPRITE->kill_blackout=0.250;
+    egg_play_sound(RID_sound_kill,1.0,0.0);
+    struct sprite *toast=session_spawn_sprite(g.session,&sprite_type_toast,killx,killy,0xf00f0000);
   }
 }
 
@@ -401,6 +412,8 @@ static void hero_update_motion(struct sprite *sprite,double elapsed) {
  */
 
 static void _hero_update(struct sprite *sprite,double elapsed) {
+
+  if (SPRITE->kill_blackout>0.0) SPRITE->kill_blackout-=elapsed;
 
   // Animate the highlight.
   if ((SPRITE->highlightclock-=elapsed)<=0.0) {
