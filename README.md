@@ -16,14 +16,15 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
  - [x] Scorekeeping.
  - [x] Music.
  - [x] Sound effects.
- - [ ] Graphics.
+ - [x] Graphics.
  - [ ] Maps.
  - [ ] Order maps by difficulty.
- - [ ] `res_get`: Build a TOC initially rather than decoding the ROM on every access.
+ - [x] `res_get`: Build a TOC initially rather than decoding the ROM on every access. XXX no point
  - [x] Null slots in waterpattern.
  - [x] Rocks as tile not sprite.
  - [x] session_render: Indicate completion via stepping stones.
- - [ ] High score at hello modal.
+ - [x] High score at hello modal.
+ - [ ] Proper high score calculation (finish maps first). score.c
  
  - [x] Web: Moving pushes the hero OOB near the top left corner. Started happening after adding the hello modal. Doesn't happen natively.
  - - just needed a clean build. Make a note to repair eggdev build

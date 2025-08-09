@@ -93,7 +93,11 @@ void render_grid(int x,int y,const uint8_t *src,int colc,int rowc) {
 void render_text(int x,int y,const char *src,int srcc,uint32_t rgba) {
   if (!src) return;
   if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
-  struct tilerenderer tr={.tint=rgba,.texid=g.texid_font};
+  struct tilerenderer tr={
+    .tint=rgba|0xff,
+    .alpha=rgba&0xff,
+    .texid=g.texid_font,
+  };
   for (;srcc-->0;src++,x+=8) {
     tilerenderer_add(&tr,x,y,*src,0);
   }
@@ -155,6 +159,7 @@ void tilerenderer_flush(struct tilerenderer *tr) {
     .tint=tr->tint,
     .alpha=0xff,
   };
+  if (tr->alpha) un.alpha=tr->alpha; // Never zero; default to 0xff in that case.
   if (tr->texid) un.srctexid=tr->texid;
   egg_render(&un,tr->vtxv,sizeof(struct egg_render_tile)*tr->vtxc);
   tr->vtxc=0;

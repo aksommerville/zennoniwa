@@ -1,5 +1,13 @@
 #include "zennoniwa.h"
 
+/* Calculate simple scalar score.
+ */
+ 
+void score_calculate(struct score *score) {
+  //TODO Final score formula. We need the full set of levels first.
+  score->score=score->pinkc;
+}
+
 /* Encode.
  */
  
@@ -67,6 +75,7 @@ int score_decode(struct score *score,const char *src,int srcc) {
   score->time=(double)(min*60+sec)+(double)ms/1000.0;
   score->life=(double)life/1000.0;
   score->pinkc=pinkc;
+  score_calculate(score);
   return 0;
 }
 
@@ -77,6 +86,7 @@ static void score_default(struct score *score) {
   score->time=999999.0;
   score->life=0.0;
   score->pinkc=0;
+  score->score=0;
 }
 
 /* High score.

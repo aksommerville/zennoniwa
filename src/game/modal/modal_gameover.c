@@ -7,6 +7,7 @@
 
 struct modal_gameover {
   struct modal hdr;
+  int new_high_score;
 };
 
 #define MODAL ((struct modal_gameover*)modal)
@@ -22,25 +23,16 @@ static void _gameover_del(struct modal *modal) {
  
 static int _gameover_init(struct modal *modal) {
   egg_play_song(RID_song_only_soil_deep,0,1);
+  MODAL->new_high_score=0;
   if (g.session) {
     int levelc=g.session->rid-1;
     if (levelc<1) levelc=1;
     g.session->tscore.life/=(double)levelc;
-    int changed=0;
-    if (g.session->tscore.time<g.hiscore.time) {
-      g.hiscore.time=g.session->tscore.time;
-      changed=1;
-    }
-    if (g.session->tscore.life>g.hiscore.life) {
-      g.hiscore.life=g.session->tscore.life;
-      changed=1;
-    }
-    if (g.session->tscore.pinkc>g.hiscore.pinkc) {
-      g.hiscore.pinkc=g.session->tscore.pinkc;
-      changed=1;
-    }
-    if (changed) {
+    score_calculate(&g.session->tscore);
+    if (g.session->tscore.score>g.hiscore.score) {
+      memcpy(&g.hiscore,&g.session->tscore,sizeof(struct score));
       hiscore_save();
+      MODAL->new_high_score=1;
     }
   }
   return 0;

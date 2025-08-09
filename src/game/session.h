@@ -15,12 +15,16 @@ struct score {
   double time; // s
   double life; // 0..1
   int pinkc;
+  int score; // Derived from the above. 0..999999
 };
 
 /* Decode is guaranteed not to touch (score) if input malformed.
  */
 int score_encode(char *dst,int dsta/*17*/,struct score *score);
 int score_decode(struct score *score,const char *src,int srcc);
+
+// Set (score->score) based on the other fields.
+void score_calculate(struct score *score);
 
 struct session {
 

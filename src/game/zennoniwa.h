@@ -37,7 +37,7 @@ void blit_texture(int dstx,int dsty,int texid,int w,int h,uint8_t alpha);
 void render_text(int x,int y,const char *src,int srcc,uint32_t rgba); // (x,y) is the center of the first glyph
 void render_time(int x,int y,double s,uint32_t rgba);
 void render_uint(int x,int y,int v,int limit,uint32_t rgba);
-struct tilerenderer { struct egg_render_tile vtxv[64]; int vtxc; uint32_t tint; int texid; };
+struct tilerenderer { struct egg_render_tile vtxv[64]; int vtxc; uint32_t tint; uint8_t alpha; int texid; };
 void tilerenderer_add(struct tilerenderer *tr,int x,int y,uint8_t tileid,uint8_t xform);
 void tilerenderer_flush(struct tilerenderer *tr);
 struct fancyrenderer { struct egg_render_fancy vtxv[64]; int vtxc; };
