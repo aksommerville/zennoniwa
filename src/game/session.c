@@ -13,12 +13,77 @@ void session_del(struct session *session) {
   free(session);
 }
 
+/* Generate the static background tiles.
+ */
+ 
+static int session_generate_bgtilev(struct session *session) {
+  session->bgtilec=0;
+  #define VTXPX(_x,_y,_tileid,_xform) { \
+    if (session->bgtilec>=SESSION_BGTILES_SIZE) { \
+      fprintf(stderr,"too many background tiles\n"); \
+      return -1; \
+    } \
+    struct egg_render_tile *vtx=session->bgtilev+session->bgtilec++; \
+    vtx->x=_x; \
+    vtx->y=_y; \
+    vtx->tileid=_tileid; \
+    vtx->xform=_xform; \
+  }
+  #define VTX(col,row,_tileid,_xform) { \
+    VTXPX((col)*NS_sys_tilesize+(NS_sys_tilesize>>1),(row)*NS_sys_tilesize+(NS_sys_tilesize>>1),_tileid,_xform) \
+  }
+  int x,y;
+  
+  // Bamboo on the edges.
+  for (y=0;y<11;y++) {
+    VTX(0,y,0x40+(y<<4),0)
+    VTX(19,y,0x40+(y<<4),EGG_XFORM_XREV)
+  }
+  
+  // Second and second-to-last columns: Grass and sand edges.
+  VTX(1,0,0x33,0)
+  VTX(18,0,0x33,0)
+  VTX(1,1,0x37,EGG_XFORM_XREV|EGG_XFORM_YREV)
+  VTX(18,1,0x37,EGG_XFORM_YREV)
+  for (y=2;y<=9;y++) {
+    VTX(1,y,0x34+(y%3),EGG_XFORM_SWAP|EGG_XFORM_YREV)
+    VTX(18,y,0x34+(y%3),EGG_XFORM_SWAP)
+  }
+  VTX(1,10,0x37,EGG_XFORM_XREV)
+  VTX(18,10,0x37,0)
+  
+  // Remainder of bottom row is sand edge -- the stepping stones are not part of this set.
+  for (x=2;x<=17;x++) VTX(x,10,0x34+(x%3),0)
+  
+  // Pond. No rock, fish, or lily pad.
+  VTX(2,0,0x63,0)
+  VTX(2,1,0x73,0)
+  VTX(17,0,0x63,EGG_XFORM_XREV)
+  VTX(17,1,0x73,EGG_XFORM_XREV)
+  for (x=3;x<=16;x++) {
+    VTX(x,0,0x47,0)
+    VTX(x,1,0x74+(x%4),0)
+  }
+  
+  // Rocks and lily pad. These are static and opaque, but they're a bit offset from the grid.
+  VTXPX( 80,10,0x43,0)
+  VTXPX(112,10,0x44,0)
+  VTXPX(200,10,0x45,0)
+  VTXPX(232,10,0x46,0)
+  
+  #undef VTX
+  #undef VTXPX
+  return 0;
+}
+
 /* New.
  */
  
 struct session *session_new() {
   struct session *session=calloc(1,sizeof(struct session));
   if (!session) return 0;
+  
+  session_generate_bgtilev(session);
   
   if (session_load_map(session,RID_map_trial)<0) {
     session_del(session);
@@ -122,11 +187,11 @@ void session_update(struct session *session,double elapsed,int input,int pvinput
  */
  
 void session_render(struct session *session) {
+  struct tilerenderer tr={0};
 
   /* Background.
-   */
+   *
   fill_rect(0,0,FBW,FBH,0x286b46ff);
-  struct tilerenderer tr={0};
   #define OTILE(col,row,tileid,xform) tilerenderer_add(&tr,(col)*NS_sys_tilesize+(NS_sys_tilesize>>1),(row)*NS_sys_tilesize+(NS_sys_tilesize>>1),tileid,xform);
   int x,y;
   for (x=2;x<=17;x++) {
@@ -147,6 +212,15 @@ void session_render(struct session *session) {
   }
   for (x=2;x<=8;x+=2) OTILE(x,10,0x38,0)
   for (x=11;x<=17;x+=2) OTILE(x,10,0x38,0)
+  /**/
+  fill_rect(0,0,FBW,FBH,0xff80c0ff);//XXX
+  struct egg_render_uniform un={
+    .mode=EGG_RENDER_TILE,
+    .dsttexid=1,
+    .srctexid=g.texid_tilesheet,
+    .alpha=0xff,
+  };
+  egg_render(&un,session->bgtilev,session->bgtilec*sizeof(struct egg_render_tile));
 
   /* Map and plants.
    */
@@ -217,8 +291,6 @@ void session_render(struct session *session) {
       fill_rect(0,0,FBW,FBH,0x1020c000|alpha);
     }
   }
-  
-  #undef OTILE
 }
 
 /* Kill all sprites.

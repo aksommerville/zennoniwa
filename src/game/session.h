@@ -9,6 +9,7 @@ struct sprite;
 
 #define SESSION_TERMCLOCK_LIMIT 2.000
 #define SESSION_TERMCLOCK_BEGIN 1.000
+#define SESSION_BGTILES_SIZE (20*11-16*8)
 
 struct score {
   double time; // s
@@ -44,6 +45,10 @@ struct session {
   
   struct score lscore; // Score for this or most recent level.
   struct score tscore; // Score for the entire session. (life) is the sum per level; need to divide by levels played.
+  
+  // Tiles for the border, we lay them out just once at init.
+  struct egg_render_tile bgtilev[SESSION_BGTILES_SIZE];
+  int bgtilec;
 };
 
 void session_del(struct session *session);
