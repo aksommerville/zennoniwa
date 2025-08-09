@@ -15,5 +15,5 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
  - - [x] Show the completed plant pattern, a thumbnail of it.
  - [x] Gameover modal.
  - [x] Corruption kanji
- - [ ] Sound effect while watering
+ - [x] Sound effect while watering
  - [ ] Edge sand tiles.

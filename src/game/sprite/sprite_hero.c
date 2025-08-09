@@ -239,7 +239,11 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
     SPRITE->pourclock=0.0;
     return;
   }
+  int pvstep=(int)(SPRITE->pourclock*4.0);
+  if (SPRITE->pourclock<=0.0) pvstep=-1; // always blip at the first opportunity
   SPRITE->pourclock+=elapsed;
+  int nxstep=(int)(SPRITE->pourclock*4.0);
+  if (pvstep!=nxstep) egg_play_sound(RID_sound_water,1.0,0.0);
   struct delta2d storage[WATER_LIMIT];
   int patternc=waterpattern_get(storage,sprite,g.session->waterpattern);
   const struct delta2d *delta=storage;
