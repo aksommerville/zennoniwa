@@ -61,7 +61,6 @@ static int _hero_init(struct sprite *sprite) {
   SPRITE->waterpattern=WATERPATTERN_THREE;
   hero_update_qpos(sprite);
   SPRITE->waterx0=-1; // Signal to rebuild watertiles at the first prerender.
-  //hero_rebuild_watertiles(sprite);
   return 0;
 }
 
@@ -73,37 +72,7 @@ struct delta2d {
   double rate; // >0 to create, <0 to corrupt, or 0 to make the caller wonder why you bothered returning it
 };
 
-static int waterpattern_get_always(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sprite,int pattern) {
-  switch (pattern) {
-    case WATERPATTERN_SINGLE: {
-        dst[0]=(struct delta2d){0,0};
-        return 1;
-      }
-    case WATERPATTERN_CROSS: {
-        dst[0]=(struct delta2d){0,-1};
-        dst[1]=(struct delta2d){-1,0};
-        dst[2]=(struct delta2d){0,0};
-        dst[3]=(struct delta2d){1,0};
-        dst[4]=(struct delta2d){0,1};
-        return 5;
-      }
-    case WATERPATTERN_THREE: {
-        if (SPRITE->facedy) {
-          dst[0]=(struct delta2d){-1,0};
-          dst[1]=(struct delta2d){0,0};
-          dst[2]=(struct delta2d){1,0};
-        } else {
-          dst[0]=(struct delta2d){0,-1};
-          dst[1]=(struct delta2d){0,0};
-          dst[2]=(struct delta2d){0,1};
-        }
-        return 3;
-      }
-  }
-  return 0;
-}
-
-static int waterpattern_get_ondemand(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sprite,int pattern) {
+static int waterpattern_get(struct delta2d *dst/*WATER_LIMIT*/,struct sprite *sprite,int pattern) {
   struct delta2d *delta=dst;
   int i=0; for (;i<9;i++) {
     dst[i].dx=(i%3)-1;
@@ -153,7 +122,7 @@ static void hero_rebuild_watertiles(struct sprite *sprite) {
   /* Get the generic pattern.
    */
   struct delta2d storage[WATER_LIMIT];
-  int patternc=waterpattern_get_ondemand(storage,sprite,SPRITE->waterpattern);
+  int patternc=waterpattern_get(storage,sprite,SPRITE->waterpattern);
   
   /* Turn that delta list into a flat 6x6 grid of moods.
    * (0,1,2)=(none,positive,negative), setting 4 at a time.
@@ -246,9 +215,7 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
   }
   SPRITE->pourclock+=elapsed;
   struct delta2d storage[WATER_LIMIT];
-  int patternc=g.corrupt_always
-    ?waterpattern_get_always(storage,sprite,SPRITE->waterpattern)
-    :waterpattern_get_ondemand(storage,sprite,SPRITE->waterpattern);
+  int patternc=waterpattern_get(storage,sprite,SPRITE->waterpattern);
   const struct delta2d *delta=storage;
   int highlightc=0;
   double highlightx=0.0,highlighty=0.0;
@@ -278,27 +245,6 @@ static void hero_water_plants(struct sprite *sprite,double elapsed,int enable) {
   }
 }
 
-/* Corrupt plants.
- * This should only be called when (g.corrupt_always).
- */
- 
-static void hero_apply_corruption_1(struct sprite *sprite,int x,int y,double elapsed) {
-  if ((x<0)||(y<0)||(x>=g.session->mapw)||(y>=g.session->maph)) return;
-  struct cell *cell=g.session->cellv+y*g.session->mapw+x;
-  if (cell->life<=0.0) return;
-  if ((cell->life+=elapsed*CORRUPTION_RATE)<=0.0) {
-    cell->life=0.0;
-  }
-}
- 
-static void hero_apply_corruption(struct sprite *sprite,double elapsed) {
-  int dy=-1; for (;dy<=1;dy++) {
-    int dx=-1; for (;dx<=1;dx++) {
-      hero_apply_corruption_1(sprite,SPRITE->qx+dx,SPRITE->qy+dy,elapsed);
-    }
-  }
-}
-
 /* Is a given cell ok to move to?
  * Requested coords may be OOB.
  * Includes consideration of solid sprites.
@@ -312,63 +258,10 @@ static int hero_move_ok(const struct sprite *sprite,int x,int y) {
   return 1;
 }
 
-/* Walking.
+/* Motion.
  */
  
-static void hero_update_motion_continuous(struct sprite *sprite,double elapsed) {
-  const double speed=6.0;
-  
-  /* Watch for changes to the input state.
-   * When the input changes, face that direction.
-   */
-  int nindx=0,nindy=0;
-  switch (g.session->input&(EGG_BTN_LEFT|EGG_BTN_RIGHT)) {
-    case EGG_BTN_LEFT: nindx=-1; break;
-    case EGG_BTN_RIGHT: nindx=1; break;
-  }
-  switch (g.session->input&(EGG_BTN_UP|EGG_BTN_DOWN)) {
-    case EGG_BTN_UP: nindy=-1; break;
-    case EGG_BTN_DOWN: nindy=1; break;
-  }
-  if ((nindx!=SPRITE->indx)||(nindy!=SPRITE->indy)) {
-    if (nindx&&(nindx!=SPRITE->indx)) {
-      SPRITE->facedy=0;
-      SPRITE->facedx=nindx;
-    } else if (nindy&&(nindy!=SPRITE->indy)) {
-      SPRITE->facedx=0;
-      SPRITE->facedy=nindy;
-    } else if (SPRITE->facedx&&!nindx&&nindy) {
-      SPRITE->facedx=0;
-      SPRITE->facedy=nindy;
-    } else if (SPRITE->facedy&&!nindy&&nindx) {
-      SPRITE->facedy=0;
-      SPRITE->facedx=nindx;
-    } else if (SPRITE->facedx&&nindx&&(SPRITE->facedx!=nindx)) {
-      SPRITE->facedx=nindx;
-    } else if (SPRITE->facedy&&nindy&&(SPRITE->facedy!=nindy)) {
-      SPRITE->facedy=nindy;
-    }
-    SPRITE->indx=nindx;
-    SPRITE->indy=nindy;
-    if (SPRITE->facedx) SPRITE->stickydx=SPRITE->facedx;
-  }
-  
-  // Input state zero, cool, we're done.
-  if (!SPRITE->indx&&!SPRITE->indy) return;
-  
-  /* Move optimistically, then rectify position.
-   * The hero is the only sprite that moves, for physics purposes.
-   */
-  sprite->x+=speed*SPRITE->indx*elapsed;
-  sprite->y+=speed*SPRITE->indy*elapsed;
-  physics_rectify(sprite);
-  hero_update_qpos(sprite);
-}
-
-/* Motion (quantized-space model).
- */
- 
-static void hero_update_motion_quantized(struct sprite *sprite,double elapsed) {
+static void hero_update_motion(struct sprite *sprite,double elapsed) {
   const double speed=6.0;
   
   /* Watch for changes to the input state.
@@ -491,19 +384,10 @@ static void _hero_update(struct sprite *sprite,double elapsed) {
   }
 
   // Walking etc.
-  if (g.quantize_hero) {
-    hero_update_motion_quantized(sprite,elapsed);
-  } else {
-    hero_update_motion_continuous(sprite,elapsed);
-  }
+  hero_update_motion(sprite,elapsed);
   
   // Creation and corruption.
-  if (g.corrupt_always) {
-    hero_water_plants(sprite,elapsed,g.session->input&EGG_BTN_SOUTH);
-    hero_apply_corruption(sprite,elapsed);
-  } else {
-    hero_water_plants(sprite,elapsed,g.session->input&EGG_BTN_SOUTH);
-  }
+  hero_water_plants(sprite,elapsed,g.session->input&EGG_BTN_SOUTH);
 }
 
 /* Render tile focus, after map but before sprites.

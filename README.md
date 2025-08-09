@@ -22,6 +22,7 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
  - [ ] Null slots in waterpattern.
  - [x] Rocks as tile not sprite.
  - [x] session_render: Indicate completion via stepping stones.
+ - [ ] High score at hello modal.
  
  - [x] Web: Moving pushes the hero OOB near the top left corner. Started happening after adding the hello modal. Doesn't happen natively.
  - - just needed a clean build. Make a note to repair eggdev build

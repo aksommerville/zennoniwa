@@ -24,8 +24,6 @@ extern struct g {
   int texid_halftiles;
   struct session *session;
   struct modal *modal;
-  int quantize_hero; // Dev only. TODO Once we choose which way we like, remove the other.
-  int corrupt_always; // Dev only. ''
   struct score hiscore;
 } g;
 
@@ -36,7 +34,6 @@ int res_get(void *dstpp,int tid,int rid);
 void fill_rect(int x,int y,int w,int h,uint32_t rgba);
 void frame_rect(int x,int y,int w,int h,uint32_t rgba);
 void blit_texture(int dstx,int dsty,int texid,int w,int h,uint8_t alpha);
-void render_grid(int x,int y,const uint8_t *src,int colc,int rowc);//XXX
 void render_text(int x,int y,const char *src,int srcc,uint32_t rgba); // (x,y) is the center of the first glyph
 void render_time(int x,int y,double s,uint32_t rgba);
 void render_uint(int x,int y,int v,int limit,uint32_t rgba);
