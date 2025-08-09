@@ -66,10 +66,10 @@ static int session_generate_bgtilev(struct session *session) {
   }
   
   // Rocks and lily pad. These are static and opaque, but they're a bit offset from the grid.
-  VTXPX( 80,10,0x43,0)
-  VTXPX(112,10,0x44,0)
-  VTXPX(200,10,0x45,0)
-  VTXPX(232,10,0x46,0)
+  VTXPX(185,30,0x43,0)
+  VTXPX(217,30,0x44,0)
+  VTXPX(360,30,0x45,0)
+  VTXPX(392,30,0x46,0)
   
   #undef VTX
   #undef VTXPX
@@ -84,6 +84,7 @@ struct session *session_new() {
   if (!session) return 0;
   
   session_generate_bgtilev(session);
+  session->fishx=130;
   
   if (session_load_map(session,RID_map_trial)<0) {
     session_del(session);
@@ -114,6 +115,11 @@ void session_update(struct session *session,double elapsed,int input,int pvinput
   int i;
   
   session->lscore.time+=elapsed;
+  
+  if ((session->fishclock-=elapsed)<=0.0) {
+    session->fishclock+=0.150;
+    if (++(session->fishframe)>=10) session->fishframe=0;
+  }
   
   // Update input blackout.
   if (session->input_blackout) {
@@ -161,8 +167,15 @@ void session_update(struct session *session,double elapsed,int input,int pvinput
   }
   if (wantplantc>0) {
     session->life=(goodlife+badlife)/wantplantc;
+    int netplantc=trueplantc-falseplantc;
+    if (netplantc<0) netplantc=0;
+    session->completion=(netplantc*8)/wantplantc;
+    if (netplantc&&!session->completion) session->completion=1; // Zero means exactly zero.
+    else if ((netplantc==wantplantc)&&!falseplantc) session->completion=8; // Eight means exactly right.
+    else if (session->completion==8) session->completion=7; // Ahem.
   } else {
     session->life=0.0;
+    session->completion=0;
   }
   if (session->qualified) {
     if ((session->termclock+=elapsed)>=SESSION_TERMCLOCK_LIMIT) {
@@ -190,30 +203,7 @@ void session_render(struct session *session) {
   struct tilerenderer tr={0};
 
   /* Background.
-   *
-  fill_rect(0,0,FBW,FBH,0x286b46ff);
-  #define OTILE(col,row,tileid,xform) tilerenderer_add(&tr,(col)*NS_sys_tilesize+(NS_sys_tilesize>>1),(row)*NS_sys_tilesize+(NS_sys_tilesize>>1),tileid,xform);
-  int x,y;
-  for (x=2;x<=17;x++) {
-    OTILE(x,10,0x34+(x%3),0)
-    OTILE(x,1,0x34+(x%3),EGG_XFORM_YREV)
-  }
-  for (y=2;y<=9;y++) {
-    OTILE(1,y,0x34+(y%3),EGG_XFORM_SWAP|EGG_XFORM_YREV)
-    OTILE(18,y,0x34+(y%3),EGG_XFORM_SWAP)
-  }
-  OTILE(1,1,0x37,EGG_XFORM_XREV|EGG_XFORM_YREV)
-  OTILE(18,1,0x37,EGG_XFORM_YREV)
-  OTILE(1,10,0x37,EGG_XFORM_XREV)
-  OTILE(18,10,0x37,0)
-  for (y=0;y<11;y++) {
-    OTILE(0,y,0x40+(y<<4),0)
-    OTILE(19,y,0x40+(y<<4),EGG_XFORM_XREV)
-  }
-  for (x=2;x<=8;x+=2) OTILE(x,10,0x38,0)
-  for (x=11;x<=17;x+=2) OTILE(x,10,0x38,0)
-  /**/
-  fill_rect(0,0,FBW,FBH,0xff80c0ff);//XXX
+   */
   struct egg_render_uniform un={
     .mode=EGG_RENDER_TILE,
     .dsttexid=1,
@@ -221,6 +211,28 @@ void session_render(struct session *session) {
     .alpha=0xff,
   };
   egg_render(&un,session->bgtilev,session->bgtilec*sizeof(struct egg_render_tile));
+  
+  /* Stepping stones indicating completion.
+   */
+  int i;
+  for (i=0;i<8;i++) {
+    uint8_t tileid=0x38;
+    if (i<session->completion) tileid=0x39;
+    tilerenderer_add(&tr,NS_sys_tilesize*3+i*NS_sys_tilesize*2,FBH-(NS_sys_tilesize>>1),tileid,0);
+  }
+  
+  /* Swimming fish.
+   */
+  {
+    uint8_t fishtile=0x53+session->fishframe;
+    int y=30;
+    if ((session->fishframe>=0)&&(session->fishframe<=2)) {
+      session->fishx++;
+    } else if ((session->fishframe>=5)&&(session->fishframe<=7)) {
+      session->fishx--;
+    }
+    tilerenderer_add(&tr,session->fishx,y,fishtile,0);
+  }
 
   /* Map and plants.
    */
@@ -269,8 +281,7 @@ void session_render(struct session *session) {
   
   /* Sprites.
    */
-  int i=0;
-  for (;i<session->spritec;i++) {
+  for (i=0;i<session->spritec;i++) {
     struct sprite *sprite=session->spritev[i];
     int dstx=(int)(sprite->x*NS_sys_tilesize)+fieldx;
     int dsty=(int)(sprite->y*NS_sys_tilesize)+fieldy;

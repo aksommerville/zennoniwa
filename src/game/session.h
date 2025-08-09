@@ -9,7 +9,7 @@ struct sprite;
 
 #define SESSION_TERMCLOCK_LIMIT 2.000
 #define SESSION_TERMCLOCK_BEGIN 1.000
-#define SESSION_BGTILES_SIZE (20*11-16*8)
+#define SESSION_BGTILES_SIZE (20*11-16*8+4)
 
 struct score {
   double time; // s
@@ -37,6 +37,7 @@ struct session {
   int qualified; // Updated each cycle. Nonzero if every cell that wants a plant has one, and none that doesn't.
   double life; // All plant life, divided by plant-here cell count. Can exceed 1, if disqualified by a false plant.
   double termclock; // Counts up when (qualified), to effect a tasteful interval before denouement.
+  int completion; // 0..8, roughly what proportion of cells are currently correct.
   
   int input_blackout; // Ignore the south button until it's been released once.
   int input,pvinput;
@@ -49,6 +50,10 @@ struct session {
   // Tiles for the border, we lay them out just once at init.
   struct egg_render_tile bgtilev[SESSION_BGTILES_SIZE];
   int bgtilec;
+  
+  double fishclock;
+  int fishframe;
+  int fishx;
 };
 
 void session_del(struct session *session);
