@@ -119,6 +119,9 @@ void session_update(struct session *session,double elapsed,int input,int pvinput
     session_load_map(session,session->rid);
   }
   
+  session->cameoclock+=elapsed;
+  if (session->cameoclock>20.0) session->cameoclock-=20.0;
+  
   session->lscore.time+=elapsed;
   
   if ((session->fishclock-=elapsed)<=0.0) {
@@ -206,6 +209,35 @@ void session_update(struct session *session,double elapsed,int input,int pvinput
  
 void session_render(struct session *session) {
   struct tilerenderer tr={0};
+  
+  /* Jammio cameo.
+   * On a 20-second loop, replace the tile for the right stone, in the background tiles.
+   * 0x44 = natural
+   * 0xe7..0xea = arising
+   * 0xeb,0xec = waving
+   */
+  if (session->bgtilec>20*11-16*8+1) {
+    struct egg_render_tile *vtx=session->bgtilev+20*11-16*8+1;
+    int frame=(int)(session->cameoclock*7.0); // to about 100
+    switch (frame) {
+      case 60: vtx->tileid=0xe7; break;
+      case 61: vtx->tileid=0xe8; break;
+      case 62: vtx->tileid=0xe9; break;
+      case 63: vtx->tileid=0xea; break;
+      case 64: vtx->tileid=0xeb; break; // begin waving...
+      case 65: vtx->tileid=0xec; break;
+      case 66: vtx->tileid=0xeb; break;
+      case 67: vtx->tileid=0xec; break;
+      case 68: vtx->tileid=0xeb; break;
+      case 69: vtx->tileid=0xec; break;
+      case 70: vtx->tileid=0xeb; break;
+      case 71: vtx->tileid=0xea; break; // retreating...
+      case 72: vtx->tileid=0xe9; break;
+      case 73: vtx->tileid=0xe8; break;
+      case 74: vtx->tileid=0xe7; break;
+      default: vtx->tileid=0x44; break;
+    }
+  }
 
   /* Background.
    */
@@ -384,6 +416,7 @@ int session_load_map(struct session *session,int rid) {
   session->lscore.life=0.0;
   session->lscore.pinkc=0;
   session->waterpattern=NS_waterpattern_single;
+  session->cameoclock=0.0;
   egg_play_song(RID_song_willow_reed,0,1);
 
   const uint8_t *serial=0;

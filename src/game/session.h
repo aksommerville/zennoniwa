@@ -59,6 +59,7 @@ struct session {
   double fishclock;
   int fishframe;
   int fishx;
+  double cameoclock;
 };
 
 void session_del(struct session *session);
