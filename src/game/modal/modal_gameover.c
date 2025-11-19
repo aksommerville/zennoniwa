@@ -105,7 +105,7 @@ static void gameover_arrange_labels(struct modal *modal) {
 static int _gameover_init(struct modal *modal) {
   if (!g.session) return -1;
   
-  egg_play_song(RID_song_only_soil_deep,0,1);
+  play_song(RID_song_only_soil_deep,1);
   
   MODAL->new_high_score=0;
   int levelc=g.session->rid-1;

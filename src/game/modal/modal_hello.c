@@ -153,7 +153,7 @@ static int _hello_init(struct modal *modal) {
   }
   
   hello_layout_options(modal);
-  egg_play_song(RID_song_only_soil_deep,0,1);
+  play_song(RID_song_only_soil_deep,1);
   while ((MODAL->optionp<MODAL->optionc)&&!MODAL->optionv[MODAL->optionp].enabled) MODAL->optionp++;
   return 0;
 }

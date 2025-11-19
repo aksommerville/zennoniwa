@@ -129,3 +129,12 @@ int tileid_is_sand(uint8_t tileid) {
   }
   return 0;
 }
+
+/* Play song.
+ */
+ 
+void play_song(int rid,int repeat) {
+  if (rid==g.playing_song_id) return;
+  g.playing_song_id=rid;
+  egg_play_song(1,rid,repeat,1.0f,0.0f);
+}

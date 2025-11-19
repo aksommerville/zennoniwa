@@ -417,7 +417,7 @@ int session_load_map(struct session *session,int rid) {
   session->lscore.pinkc=0;
   session->waterpattern=NS_waterpattern_single;
   session->cameoclock=0.0;
-  egg_play_song(RID_song_willow_reed,0,1);
+  play_song(RID_song_willow_reed,1);
 
   const uint8_t *serial=0;
   int serialc=res_get(&serial,EGG_TID_map,rid);

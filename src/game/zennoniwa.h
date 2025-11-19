@@ -25,6 +25,7 @@ extern struct g {
   struct session *session;
   struct modal *modal;
   struct score hiscore;
+  int playing_song_id;
 } g;
 
 int res_get(void *dstpp,int tid,int rid);
@@ -60,5 +61,7 @@ void hiscore_load();
 void hiscore_save();
 
 int tileid_is_sand(uint8_t tileid);
+
+void play_song(int rid,int repeat);
 
 #endif
