@@ -5,7 +5,7 @@ struct tilerenderer;
 struct fancyrenderer;
 
 #include "egg/egg.h"
-#include "opt/stdlib/egg-stdlib.h"
+#include "util/stdlib/egg-stdlib.h"
 #include "egg_res_toc.h"
 #include "shared_symbols.h"
 #include "sprite/sprite.h"
