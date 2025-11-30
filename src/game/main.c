@@ -5,6 +5,9 @@ struct g g={0};
 void egg_client_quit(int status) {
 }
 
+void egg_client_notify(int k,int v) {
+}
+
 /* XXX TEMP: Read all the maps and count the sand tiles.
  */
 static int XXX_count_sand_1(const uint8_t *src,int srcc) {
