@@ -28,5 +28,6 @@ struct modal *modal_new(const struct modal_type *type);
 extern const struct modal_type modal_type_hello;
 extern const struct modal_type modal_type_denouement;
 extern const struct modal_type modal_type_gameover;
+extern const struct modal_type modal_type_pause;
 
 #endif

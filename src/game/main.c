@@ -82,7 +82,7 @@ void egg_client_update(double elapsed) {
   int pvinput=g.pvinput;
   if (input!=g.pvinput) {
     if ((input&EGG_BTN_AUX1)&&!(pvinput&EGG_BTN_AUX1)&&!g.modal) {
-      g.modal=modal_new(&modal_type_hello);
+      g.modal=modal_new(&modal_type_pause);
     } else {
       if (g.modal&&g.modal->type->input) g.modal->type->input(g.modal,input,pvinput);
     }
@@ -96,7 +96,7 @@ void egg_client_update(double elapsed) {
       modal_del(g.modal);
       g.modal=0;
       g.pvinput=pvinput=input; // We'll be updating the session. Ignore any input from this frame.
-      if (type==&modal_type_gameover) { // If we just dropped the gameover modal, create a new hello.
+      if ((type==&modal_type_gameover)||!g.session) { // If we just dropped the gameover modal, create a new hello.
         g.modal=modal_new(&modal_type_hello);
       }
     }

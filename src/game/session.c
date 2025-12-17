@@ -263,10 +263,12 @@ void session_render(struct session *session) {
   {
     uint8_t fishtile=0x53+session->fishframe;
     int y=30;
-    if ((session->fishframe>=0)&&(session->fishframe<=2)) {
-      session->fishx++;
-    } else if ((session->fishframe>=5)&&(session->fishframe<=7)) {
-      session->fishx--;
+    if (!g.modal) {
+      if ((session->fishframe>=0)&&(session->fishframe<=2)) {
+        session->fishx++;
+      } else if ((session->fishframe>=5)&&(session->fishframe<=7)) {
+        session->fishx--;
+      }
     }
     tilerenderer_add(&tr,session->fishx,y,fishtile,0);
   }
