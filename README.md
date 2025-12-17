@@ -9,8 +9,8 @@ For GDEX Game Jam 2025, theme "CREATION AND CORRUPTION".
 ## TODO
 
 - [ ] Press start to return to menu. A brief modal: "Resume", "Reset", "Main Menu", "Quit"
-- [ ] New second level with an errant tree and otherwise ready.
+- [x] New second level with an errant tree and otherwise ready. ...the first level already has an errant tree.
 - [ ] Advice Owl during level end modal.
 - [ ] Cherry blossoms to end the level instead of fading out.
-- [ ] Reduce sand size of larger levels.
+- [x] Reduce sand size of larger levels.
 - [ ] Undo.
